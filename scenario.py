@@ -108,7 +108,8 @@ class Scenario:
         
         # Fog of war toggle (P key to toggle)
         self.show_all_map = False  # By default, hide unseen areas completely (True = show with 75% fog)
-        self.visible_cells = set()  # Set of (row, col) tuples visible to player
+        self.visible_cells = set()  # Set of (row, col) tuples currently visible to player
+        self.explored_cells = set()  # Set of (row, col) tuples that have been seen (permanent)
         
         # ========================================
         # TURN MANAGEMENT
@@ -236,6 +237,7 @@ class Scenario:
         Each player unit can see cells within their vision_range.
         Uses Chebyshev distance (allows diagonal vision).
         Updates self.visible_cells set with (row, col) tuples.
+        Also adds newly visible cells to explored_cells (permanent).
         """
         self.visible_cells = set()
         
@@ -252,6 +254,8 @@ class Scenario:
                 for c in range(max(0, col - vision), min(self.grid.grid_width, col + vision + 1)):
                     # Add cell to visible set
                     self.visible_cells.add((r, c))
+                    # Also add to explored cells (permanent)
+                    self.explored_cells.add((r, c))
     
     def remove_dead_units(self):
         """
@@ -334,10 +338,13 @@ class Scenario:
     
     def draw_fog_of_war(self, screen):
         """
-        Draw fog of war overlay on unseen cells
+        Draw fog of war overlay on unexplored cells
         
-        If show_all_map is False (default), draws 100% opacity black overlay (completely hidden)
-        If show_all_map is True, draws 75% opacity black overlay (semi-transparent)
+        Explored cells (in explored_cells) remain visible even if not currently in view.
+        Enemy units are only shown if currently visible (in visible_cells).
+        
+        If show_all_map is False (default), draws 100% opacity black overlay on unexplored cells
+        If show_all_map is True, draws 75% opacity black overlay on unexplored cells
         
         Args:
             screen (pygame.Surface): Surface to draw on
@@ -365,8 +372,8 @@ class Scenario:
         # Iterate through all grid cells
         for row in range(self.grid.grid_height):
             for col in range(self.grid.grid_width):
-                # Skip visible cells
-                if (row, col) in self.visible_cells:
+                # Skip explored cells (cells that have been seen remain visible)
+                if (row, col) in self.explored_cells:
                     continue
                 
                 # Calculate screen position for this cell (same as draw_units)
@@ -1213,9 +1220,6 @@ class Scenario:
                 # Future: Calculate move, attack, etc.
                 unit.is_active = False
         
-        # Recalculate visibility after enemy turn (for when AI actually moves units)
-        self.calculate_visible_cells()
-        
         # End enemy turn
         self.end_turn()
     
@@ -1235,10 +1239,6 @@ class Scenario:
         active_team_units = self.get_units_by_team(self.current_turn)
         for unit in active_team_units:
             unit.reset_turn()
-        
-        # Update visible cells if switching to player turn
-        if self.current_turn == 0:
-            self.calculate_visible_cells()
         
         # Deselect any selected unit
         self.deselect_unit()
