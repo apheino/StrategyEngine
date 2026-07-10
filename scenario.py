@@ -235,7 +235,7 @@ class Scenario:
         Calculate which cells are visible to the player (team 0)
         
         Each player unit can see cells within their vision_range.
-        Uses Chebyshev distance (allows diagonal vision).
+        Uses Euclidean distance for circular vision range.
         Updates self.visible_cells set with (row, col) tuples.
         Also adds newly visible cells to explored_cells (permanent).
         """
@@ -249,13 +249,18 @@ class Scenario:
             row, col = unit.position
             vision = unit.vision_range
             
-            # Check all cells within vision range (Chebyshev distance)
+            # Check all cells within vision range using Euclidean distance (circular)
             for r in range(max(0, row - vision), min(self.grid.grid_height, row + vision + 1)):
                 for c in range(max(0, col - vision), min(self.grid.grid_width, col + vision + 1)):
-                    # Add cell to visible set
-                    self.visible_cells.add((r, c))
-                    # Also add to explored cells (permanent)
-                    self.explored_cells.add((r, c))
+                    # Calculate Euclidean distance
+                    distance = ((r - row) ** 2 + (c - col) ** 2) ** 0.5
+                    
+                    # Only add if within circular range
+                    if distance <= vision:
+                        # Add cell to visible set
+                        self.visible_cells.add((r, c))
+                        # Also add to explored cells (permanent)
+                        self.explored_cells.add((r, c))
     
     def remove_dead_units(self):
         """
@@ -545,13 +550,18 @@ class Scenario:
             
             for r in range(max(0, unit_row - vision), min(self.grid.grid_height, unit_row + vision + 1)):
                 for c in range(max(0, unit_col - vision), min(self.grid.grid_width, unit_col + vision + 1)):
-                    vx = center_x + c * scaled_cell_size
-                    vy = center_y + r * scaled_cell_size
+                    # Calculate Euclidean distance for circular vision
+                    distance = ((r - unit_row) ** 2 + (c - unit_col) ** 2) ** 0.5
                     
-                    # Draw semi-transparent light blue overlay for vision range
-                    vision_overlay = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
-                    vision_overlay.fill((135, 206, 250, 40))  # Sky blue with low alpha
-                    screen.blit(vision_overlay, (vx, vy))
+                    # Only draw if within circular range
+                    if distance <= vision:
+                        vx = center_x + c * scaled_cell_size
+                        vy = center_y + r * scaled_cell_size
+                        
+                        # Draw semi-transparent light blue overlay for vision range
+                        vision_overlay = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
+                        vision_overlay.fill((135, 206, 250, 40))  # Sky blue with low alpha
+                        screen.blit(vision_overlay, (vx, vy))
     
     def update_hover(self, mouse_x, mouse_y, screen_width, screen_height):
         """
