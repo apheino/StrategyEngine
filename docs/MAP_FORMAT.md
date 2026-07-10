@@ -6,7 +6,7 @@ Maps are stored in `resources/maps/` as `map_n.txt` where `n` is the map number 
 
 Icons are stored in `resources/icons/` as `icon_n.png` or `icon_n.bmp` files.
 
-**Note**: Unit placement is handled separately in `units_n.txt` files. See [UNITS_FORMAT.md](UNITS_FORMAT.md) for details.
+**Note**: Unit placement is handled separately in `units_n.json` files. See [UNITS_FORMAT.md](UNITS_FORMAT.md) for details.
 
 ## Format Specification
 

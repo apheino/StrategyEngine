@@ -1,0 +1,32 @@
+{
+  "scenario": 1,
+  "description": "Standard battle on 10x10 map",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue",
+      "description": "Player team starting at bottom",
+      "units": [
+        {"type": "soldier", "row": 7, "col": 3},
+        {"type": "soldier", "row": 7, "col": 6},
+        {"type": "archer", "row": 8, "col": 2},
+        {"type": "archer", "row": 8, "col": 7},
+        {"type": "knight", "row": 8, "col": 4},
+        {"type": "knight", "row": 8, "col": 5}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red",
+      "description": "Enemy team starting at top",
+      "units": [
+        {"type": "soldier", "row": 2, "col": 3},
+        {"type": "soldier", "row": 2, "col": 6},
+        {"type": "archer", "row": 1, "col": 2},
+        {"type": "archer", "row": 1, "col": 7},
+        {"type": "knight", "row": 1, "col": 4},
+        {"type": "knight", "row": 1, "col": 5}
+      ]
+    }
+  ]
+}

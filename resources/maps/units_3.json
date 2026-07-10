@@ -1,0 +1,60 @@
+{
+  "scenario": 3,
+  "description": "Large battle on 200x100 map",
+  "map_size": {"width": 200, "height": 100},
+  "teams": [
+    {
+      "id": 0,
+      "name": "Player",
+      "description": "Player forces deployed on left flank and center",
+      "units": [
+        {"type": "soldier", "row": 45, "col": 15},
+        {"type": "soldier", "row": 48, "col": 15},
+        {"type": "soldier", "row": 51, "col": 15},
+        {"type": "soldier", "row": 54, "col": 15},
+        {"type": "archer", "row": 45, "col": 20},
+        {"type": "archer", "row": 48, "col": 20},
+        {"type": "archer", "row": 51, "col": 20},
+        {"type": "archer", "row": 54, "col": 20},
+        {"type": "knight", "row": 45, "col": 12},
+        {"type": "knight", "row": 54, "col": 12},
+        {"type": "soldier", "row": 42, "col": 18},
+        {"type": "soldier", "row": 57, "col": 18},
+        {"type": "archer", "row": 40, "col": 22},
+        {"type": "archer", "row": 59, "col": 22},
+        {"type": "knight", "row": 50, "col": 10},
+        {"type": "soldier", "row": 47, "col": 45},
+        {"type": "soldier", "row": 47, "col": 50},
+        {"type": "soldier", "row": 47, "col": 55},
+        {"type": "soldier", "row": 53, "col": 45},
+        {"type": "soldier", "row": 53, "col": 50},
+        {"type": "soldier", "row": 53, "col": 55},
+        {"type": "archer", "row": 50, "col": 43},
+        {"type": "archer", "row": 50, "col": 48},
+        {"type": "archer", "row": 50, "col": 52},
+        {"type": "archer", "row": 50, "col": 57},
+        {"type": "knight", "row": 45, "col": 50},
+        {"type": "knight", "row": 55, "col": 50},
+        {"type": "soldier", "row": 50, "col": 40},
+        {"type": "soldier", "row": 50, "col": 60}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Enemy",
+      "description": "Enemy forces deployed on right flank",
+      "units": [
+        {"type": "soldier", "row": 45, "col": 185},
+        {"type": "soldier", "row": 48, "col": 185},
+        {"type": "soldier", "row": 51, "col": 185},
+        {"type": "soldier", "row": 54, "col": 185},
+        {"type": "archer", "row": 45, "col": 180},
+        {"type": "archer", "row": 48, "col": 180},
+        {"type": "archer", "row": 51, "col": 180},
+        {"type": "archer", "row": 54, "col": 180},
+        {"type": "knight", "row": 45, "col": 188},
+        {"type": "knight", "row": 54, "col": 188}
+      ]
+    }
+  ]
+}

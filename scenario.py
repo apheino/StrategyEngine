@@ -18,6 +18,7 @@ Key responsibilities:
 - Hover detection and tooltips
 """
 import os
+import json
 import pygame
 from grid import Grid, PASSABLE_EASY, PASSABLE_SLOW, PASSABLE_BLOCKED
 from unit import Unit
@@ -48,8 +49,8 @@ class Scenario:
         Args:
             scenario_number (int): Scenario ID to load (1, 2, 3, etc.)
             cell_size (int): Base size of grid cells in pixels (default 64)
-            units_file (str, optional): Custom units file name (e.g., "units_1_tutorial.txt")
-                                      If None, uses "units_{scenario_number}.txt"
+            units_file (str, optional): Custom units file name (e.g., "units_1_tutorial.json")
+                                      If None, uses "units_{scenario_number}.json"
         """
         self.scenario_number = scenario_number
         self.cell_size = cell_size
@@ -68,7 +69,7 @@ class Scenario:
         
         # Load unit placement from file
         if units_file is None:
-            units_file = f"units_{scenario_number}.txt"
+            units_file = f"units_{scenario_number}.json"
         self.units = self.load_units(units_file)
         
         # ========================================
@@ -112,19 +113,24 @@ class Scenario:
     
     def load_units(self, units_file):
         """
-        Load unit positions and types from file
+        Load unit positions and types from JSON file
         
-        Units file format:
-        - One unit per line: unit_type,team,row,col
-        - Lines starting with # are comments
-        - Empty lines are skipped
-        
-        Example:
-        # Player units (team 0)
-        soldier,0,1,1
-        archer,0,1,2
-        # Enemy units (team 1)
-        knight,1,8,8
+        Units file format (JSON):
+        {
+            "scenario": 1,
+            "description": "Standard battle",
+            "teams": [
+                {
+                    "id": 0,
+                    "name": "Blue",
+                    "units": [
+                        {"type": "soldier", "row": 7, "col": 3},
+                        ...
+                    ]
+                },
+                ...
+            ]
+        }
         
         Args:
             units_file (str): Filename (will look in resources/maps/)
@@ -144,37 +150,32 @@ class Scenario:
         
         try:
             with open(units_file, 'r') as f:
-                for line_num, line in enumerate(f, 1):
-                    line = line.strip()
+                data = json.load(f)
+            
+            # Parse teams and units
+            teams = data.get('teams', [])
+            for team_data in teams:
+                team_id = team_data.get('id', 0)
+                team_units = team_data.get('units', [])
+                
+                for unit_data in team_units:
+                    unit_type = unit_data.get('type')
+                    row = unit_data.get('row')
+                    col = unit_data.get('col')
                     
-                    # Skip empty lines and comments
-                    if not line or line.startswith('#'):
+                    # Validate required fields
+                    if unit_type is None or row is None or col is None:
+                        print(f"Warning: Invalid unit data: {unit_data}")
                         continue
                     
-                    # Parse unit data
-                    try:
-                        parts = line.split(',')
-                        if len(parts) != 4:
-                            print(f"Warning: Invalid format on line {line_num}: {line}")
-                            continue
-                        
-                        unit_type = parts[0].strip()
-                        team = int(parts[1].strip())
-                        row = int(parts[2].strip())
-                        col = int(parts[3].strip())
-                        
-                        # Validate position is within map bounds
-                        if row < 0 or row >= self.grid.grid_height or col < 0 or col >= self.grid.grid_width:
-                            print(f"Warning: Unit position ({row},{col}) out of bounds on line {line_num}")
-                            continue
-                        
-                        # Create unit
-                        unit = Unit(unit_type=unit_type, team=team, position=(row, col))
-                        units.append(unit)
-                        
-                    except ValueError as e:
-                        print(f"Warning: Error parsing line {line_num}: {e}")
+                    # Validate position is within map bounds
+                    if row < 0 or row >= self.grid.grid_height or col < 0 or col >= self.grid.grid_width:
+                        print(f"Warning: Unit position ({row},{col}) out of bounds")
                         continue
+                    
+                    # Create unit
+                    unit = Unit(unit_type=unit_type, team=team_id, position=(row, col))
+                    units.append(unit)
             
             print(f"Loaded {len(units)} units from {units_file}")
         

@@ -1,0 +1,25 @@
+{
+  "scenario": 1,
+  "description": "Tutorial mode - simplified battle for learning",
+  "difficulty": "tutorial",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue",
+      "description": "Player team (bottom)",
+      "units": [
+        {"type": "soldier", "row": 8, "col": 4},
+        {"type": "archer", "row": 8, "col": 5}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red",
+      "description": "Tutorial opponent (top)",
+      "units": [
+        {"type": "soldier", "row": 1, "col": 4},
+        {"type": "archer", "row": 1, "col": 5}
+      ]
+    }
+  ]
+}

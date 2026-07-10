@@ -1,0 +1,33 @@
+{
+  "scenario": 2,
+  "description": "Rectangular map (15x8) with obstacles and catapult",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue",
+      "description": "Player team starting at left side",
+      "units": [
+        {"type": "soldier", "row": 3, "col": 2},
+        {"type": "soldier", "row": 4, "col": 2},
+        {"type": "archer", "row": 2, "col": 3},
+        {"type": "archer", "row": 5, "col": 3},
+        {"type": "knight", "row": 3, "col": 3},
+        {"type": "knight", "row": 4, "col": 3},
+        {"type": "catapult", "row": 3, "col": 1}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red",
+      "description": "Enemy team starting at right side",
+      "units": [
+        {"type": "soldier", "row": 3, "col": 12},
+        {"type": "soldier", "row": 4, "col": 12},
+        {"type": "archer", "row": 2, "col": 11},
+        {"type": "archer", "row": 5, "col": 11},
+        {"type": "knight", "row": 3, "col": 11},
+        {"type": "knight", "row": 4, "col": 11}
+      ]
+    }
+  ]
+}
