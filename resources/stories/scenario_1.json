@@ -1,0 +1,24 @@
+{
+  "scenario_number": 1,
+  "title": "The First Battle",
+  "intro_text": [
+    "Your forces have arrived at the contested border.",
+    "The enemy has taken position across the grasslands.",
+    "",
+    "Objective: Eliminate all enemy forces.",
+    "",
+    "This is a small engagement to test your tactical skills."
+  ],
+  "victory_text": [
+    "Victory! The enemy has been routed.",
+    "Your tactical prowess has won the day.",
+    "",
+    "Prepare for the next engagement."
+  ],
+  "defeat_text": [
+    "Defeat. Your forces have been overwhelmed.",
+    "",
+    "Regroup and try a different strategy."
+  ],
+  "next_scenario": 2
+}

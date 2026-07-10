@@ -1,0 +1,28 @@
+{
+  "scenario_number": 3,
+  "title": "The Great Plains Battle",
+  "intro_text": [
+    "The decisive battle has come.",
+    "Both armies have assembled on the vast plains.",
+    "Mountains and swamps dot the landscape.",
+    "",
+    "Objective: Eliminate all enemy forces.",
+    "",
+    "This will be your greatest test. Command wisely."
+  ],
+  "victory_text": [
+    "VICTORY! The enemy army is defeated!",
+    "Your strategic mastery has secured total victory.",
+    "",
+    "You have completed the campaign.",
+    "",
+    "Well done, Commander!"
+  ],
+  "defeat_text": [
+    "The battle was lost.",
+    "Even the greatest commanders face defeat.",
+    "",
+    "Learn from this and try again."
+  ],
+  "next_scenario": null
+}

@@ -1,0 +1,24 @@
+{
+  "scenario_number": 2,
+  "title": "The Narrow Valley",
+  "intro_text": [
+    "The enemy has retreated to a narrow valley.",
+    "Their position is defensible but limited in space.",
+    "",
+    "Objective: Eliminate all enemy forces.",
+    "",
+    "Use the terrain to your advantage and outmaneuver them."
+  ],
+  "victory_text": [
+    "Excellent! The valley has been secured.",
+    "The enemy's defensive advantage was overcome by superior tactics.",
+    "",
+    "Your reputation grows."
+  ],
+  "defeat_text": [
+    "The narrow terrain proved too challenging.",
+    "",
+    "Consider a different approach next time."
+  ],
+  "next_scenario": 3
+}
