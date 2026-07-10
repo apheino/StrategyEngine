@@ -21,7 +21,8 @@ Unit attributes are now loaded from JSON files located in `resources/units/{unit
   "projectile_count": 1,
   "hit_chance": 0.95,
   "damage_std": 3.0,
-  "fire_type": "direct"
+  "fire_type": "direct",
+  "vision_range": 5
 }
 ```
 
@@ -43,6 +44,13 @@ If a unit's attribute file is not found, default values are used.
 - **mobility** (int): Current movement points available this turn - **reduced when damaged**
 - **max_mobility** (int): Maximum movement points per turn (loaded from file)
 - **speed** (float): Movement animation speed in cells per second (loaded from file)
+
+### Vision Attributes
+- **vision_range** (int): How far the unit can see in cells (loaded from file)
+  - Creates circular visible area using Euclidean distance
+  - Affects fog of war visibility and targeting
+  - Different per unit type: Archer (7), Soldier (5), Knight (4)
+  - Higher vision = better scouting capability
 
 ## Damage Degradation System
 
@@ -355,8 +363,6 @@ damage = soldier.attack(archer)
 - **experience** - Level up system
 - **special_abilities** - Unique powers per unit
 - **cost** - Resource cost to create unit
-- **vision_range** - How far unit can see
-- **accuracy** - Hit chance modifier
 - **evasion** - Dodge chance
 - **movement_type** - Flying, ground, water
 - **morale** - Affects combat effectiveness

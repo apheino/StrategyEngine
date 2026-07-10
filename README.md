@@ -7,13 +7,14 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
 ### Core Systems
 - ✅ **Grid-based map system** with customizable terrain
 - ✅ **Pathfinding system** (BFS) for realistic movement around obstacles
+- ✅ **Fog of war** with vision range and tactical visibility
 - ✅ **Animated units** with health-based animation variants
 - ✅ **Combat system** with attack, hurt, and death animations
 - ✅ **Projectile system** for ranged attacks
 - ✅ **Smooth movement animation** with configurable speed and rotation
 - ✅ **Health bars** showing unit status with color coding
 - ✅ **Turn-based gameplay** with player vs AI
-- ✅ **Unit movement system** with terrain effects and pathfinding
+- ✅ **Unit movement system** with multiple moves per turn
 - ✅ **Unit hover tooltips** showing stats for all units
 - ✅ **File-based unit attributes** for easy balancing
 - ✅ **Scenario management** with separate map and unit files
@@ -22,6 +23,18 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
 ### Game Mechanics
 - **Player Units** (Team 0) - Full control with point-and-click movement and attacks
 - **Enemy Units** (Team 1) - AI placeholder ready for implementation
+- **Fog of War**:
+  - **Vision range**: Each unit type has different vision (4-7 cells)
+  - **Circular vision**: Uses Euclidean distance for realistic visibility
+  - **Persistent exploration**: Terrain stays visible once seen
+  - **Enemy visibility**: Only visible when in current vision range
+  - **Vision visualization**: Light blue overlay shows selected unit's vision
+  - **Toggle visibility**: Press P to see full map at 75% opacity
+- **Movement System**:
+  - **Multiple moves per turn**: Units can move multiple times until mobility exhausted
+  - **Mobility consumption**: Each move deducts mobility based on distance
+  - **Partial moves**: Move 1-2 spaces and still have moves remaining
+  - **Auto-reselection**: Unit stays selected if mobility remains
 - **Combat System**:
   - Attack system with range checking (melee and ranged)
   - **Line of sight**: Direct fire requires clear LOS, indirect fire can shoot over obstacles
@@ -43,11 +56,11 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
   - **Grassland** (icon_2) - Easy passable, normal movement
   - **Swamp/Rough** (icon_3) - Slow passable, halved mobility when starting from
   - **Mountain/Water** (icon_4) - Blocked, impassable
-- **Unit Attributes**: Health, Attack, Defense, Mobility, Range, Projectile Speed
+- **Unit Attributes**: Health, Attack, Defense, Mobility, Range, Vision Range, Projectile Speed
 - **Unit Types**: 
-  - **Soldier** (Melee) - 100 HP, 22 Attack, 6 Defense, Range 1, Mobility 3, 95% hit chance
-  - **Archer** (Ranged) - 80 HP, 12 Attack, 3 Defense, Range 3, Mobility 5, 75% hit chance, 3 projectiles
-  - **Knight** (Heavy) - 150 HP, 30 Attack, 12 Defense, Range 1, Mobility 2, 98% hit chance
+  - **Soldier** (Melee) - 100 HP, 22 Attack, 6 Defense, Range 1, Mobility 3, Vision 5, 95% hit chance
+  - **Archer** (Ranged) - 80 HP, 12 Attack, 3 Defense, Range 3, Mobility 5, Vision 7, 75% hit chance, 3 projectiles
+  - **Knight** (Heavy) - 150 HP, 30 Attack, 12 Defense, Range 1, Mobility 2, Vision 4, 98% hit chance
 
 ### Visual Features
 - **Camera Controls**: Pan with drag, zoom with mouse wheel toward viewport center
@@ -66,6 +79,8 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
   - Selection highlights (yellow border)
   - Valid move indicators (green overlay)
   - Attack target indicators (red overlay)
+  - Vision range visualization (light blue overlay for selected unit)
+  - Light gray fog of war on unexplored areas
   - Unit information tooltips on hover (blue=player, red=enemy)
   - Turn indicator with color coding
   - FPS counter
@@ -123,13 +138,18 @@ python main.py
 ### Keyboard
 - **SPACE**: End turn
 - **G**: Toggle grid lines
+- **H**: Toggle damage numbers display
+- **P**: Toggle fog of war visibility (75% vs 100% opacity)
 - **ESC**: Quit game
 
 ### Gameplay
 1. **Select a unit**: Click on one of your units (player team, blue tooltip border)
 2. **Move**: Click on a green highlighted cell to move there
-3. **Attack**: Click on a red highlighted enemy to attack
+   - Unit will move and deduct mobility based on distance
+   - If mobility remains, unit stays selected and can move again
+3. **Attack**: Click on a red highlighted enemy to attack (if in vision range)
 4. **End turn**: Press SPACE when done to let enemy take their turn
+5. **Vision**: Notice fog of war clearing as units move - only revealed areas visible
 
 See [docs/GAMEPLAY.md](docs/GAMEPLAY.md) for detailed gameplay instructions.
 

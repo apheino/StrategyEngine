@@ -19,7 +19,9 @@ The game uses a two-team system:
    - Unit will smoothly animate movement to the destination
    - Movement speed: 2 cells per second
    - Movement uses "move" animation, then switches to "idle" when complete
-   - Unit becomes inactive after moving (can't move again this turn)
+   - **Mobility is deducted** based on distance moved
+   - **Unit remains active** if mobility points remain (can move again)
+   - Unit becomes inactive when mobility reaches 0
 
 3. **Click another unit** or empty space to deselect
 
@@ -33,8 +35,16 @@ The game uses a two-team system:
 **Movement Range:**
 - Each unit has a **mobility** value (default: 3 cells)
 - Units can move up to their mobility value using pathfinding
+- **Mobility is consumed** based on distance moved (1 point per cell)
+- **Multiple moves allowed**: Units can move again if mobility remains
 - Movement pathfinding uses BFS to find routes around obstacles
 - Units cannot move through blocked terrain (mountains, water)
+
+**Example:** Soldier with 3 mobility can:
+- Move 1 space, then 2 more spaces (3 total)
+- Move 2 spaces, then 1 more space (3 total)  
+- Move 3 spaces in one move
+- Any combination totaling ≤3 spaces
 
 **Terrain Effects:**
 - **Easy Passable** (grassland, etc.): Normal movement
@@ -46,7 +56,7 @@ The game uses a two-team system:
 - Cannot move to cells occupied by other units
 - Cannot move to blocked terrain
 - Cannot move through blocked terrain (proper pathfinding enforced)
-- Can only move once per turn (unit becomes inactive after moving)
+- **Can move multiple times** per turn until mobility exhausted
 - Can only select and move units on player turn (team 0)
 
 ### Turn Management
@@ -92,17 +102,22 @@ Currently, enemy units have a placeholder AI system:
 - **SPACE**: End turn
 - **H**: Toggle damage numbers display (shows damage dealt on screen)
 - **G**: Toggle grid lines
+- **P**: Toggle fog of war visibility (75% vs 100% opacity)
 - **ESC**: Quit game
 
 ## Unit Status
 
 Each unit tracks:
 - **is_active**: Can the unit act this turn?
-  - Set to False after moving
+  - Set to False when mobility reaches 0
   - Reset to True at start of each turn
-- **mobility**: Current movement points
-  - Decreases based on actions (currently unused, reserved for future)
+- **mobility**: Current movement points remaining
+  - Decreases with each move based on distance traveled
+  - Unit can move multiple times until mobility = 0
   - Reset to max_mobility at start of each turn
+- **pending_mobility_cost**: Mobility to deduct when movement animation completes
+  - Stored during movement animation
+  - Applied when unit reaches destination
 
 ## Screen Indicators
 
@@ -132,37 +147,88 @@ Each unit tracks:
 - Selected unit stats: type, health, mobility
 - FPS counter (top-right)
 
+## Fog of War System
+
+### Vision and Visibility
+
+**Vision Range:**
+- Each unit has a **vision_range** attribute (4-7 cells)
+- Creates a **circular visible area** using Euclidean distance
+- Units can only see and attack enemies within their vision range
+
+**Unit Vision Ranges:**
+- **Archer**: 7 cells (best vision - trained scouts)
+- **Catapult**: 6 cells (elevated position)
+- **Soldier**: 5 cells (standard infantry vision)
+- **Knight**: 4 cells (restricted by heavy armor/helmet)
+
+**Visibility Mechanics:**
+- **Unexplored areas**: Covered with light gray fog (100% opacity)
+- **Explored terrain**: Remains visible permanently once seen
+- **Enemy units**: Only visible when in current vision range
+- **Vision updates**: Automatically recalculates after unit movement
+
+**Vision Visualization:**
+- Select a unit to see **light blue overlay** showing vision range
+- Circular pattern shows exactly which cells the unit can see
+- Vision display updates as you select different units
+
+**Toggle Fog Visibility:**
+- Press **P** to toggle between:
+  - Normal: 100% opacity fog (unexplored areas completely hidden)
+  - Show all: 75% opacity fog (can see through for planning)
+
+### Tactical Implications
+
+- **Archers are scouts**: Use high vision range to explore map
+- **Knights need support**: Low vision makes them vulnerable to ambush
+- **Exploration matters**: Move units to reveal enemy positions
+- **Vision controls targeting**: Cannot attack what you can't see
+- **Positioning is key**: Stay in range to maintain vision on enemies
+
 ## Example Gameplay
 
-1. Start game - Player turn begins
+## Example Gameplay
+
+1. Start game - Player turn begins with fog of war active
 2. Click on your soldier unit
    - Yellow border appears
-   - Green cells show where you can move
-3. Click on a green cell
+   - Green cells show where you can move (within remaining mobility)
+   - Light blue overlay shows vision range
+3. Click on a green cell 1 space away
    - Unit moves with animation
-   - Unit becomes inactive
-   - Selection clears
-4. Select and move other units as desired
-5. Press SPACE to end turn
-6. Enemy turn executes (currently instant)
-7. Player turn begins again with all units active
+   - Mobility reduced by 1 (e.g., 3 → 2)
+   - Unit remains selected (can move again)
+   - Fog of war updates, revealing new terrain
+4. Move the same unit again if mobility remains
+   - Valid moves recalculated based on remaining mobility
+   - Continue until mobility exhausted
+5. Select and move other units as desired
+   - Watch fog clear as units explore
+   - Enemy units appear when in vision range
+6. Press SPACE to end turn
+7. Enemy turn executes (currently instant)
+8. Player turn begins again with all units' mobility reset
 
 ## Tips
 
-- Plan your moves carefully - units can only move once per turn
+- **Use mobility efficiently** - partial moves let you reposition tactically
+- **Vision range matters** - units reveal fog of war in circular area
+- **Archers for scouting** - 7 vision range reveals most territory
 - Check terrain passability - slow terrain reduces mobility
 - Remember starting position affects movement range
 - Use zoom and pan to see the full battlefield
 - Toggle grid (G) for cleaner view
+- Press P to see the full map temporarily
 
 ## Future Enhancements
 
 Planned features:
-- Attack system (units can attack adjacent enemies)
-- Unit health bars
-- Combat animations
-- Enemy AI behavior
-- Multiple actions per turn (move + attack)
-- Special abilities per unit type
-- Victory/defeat conditions
-- Campaign mode with multiple scenarios
+- **Enemy AI behavior** - Intelligent movement and combat decisions
+- **Multiple actions per turn** - Move then attack in same turn
+- **Special abilities** - Unit-specific powers and skills
+- **Victory/defeat conditions** - Win/lose scenarios
+- **Campaign mode** - Story-driven multi-scenario campaigns
+- **Unit experience/upgrades** - Level up system
+- **More unit types** - Cavalry, siege weapons, magic users
+- **Terrain effects on combat** - High ground bonuses, cover system

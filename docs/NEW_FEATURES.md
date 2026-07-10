@@ -2,7 +2,101 @@
 
 ## Recent Updates (Latest First)
 
-### 0.1 Direct/Indirect Fire System
+### 0.1 Fog of War System
+**Added:** Fog of war with vision range and tactical visibility.
+
+**Features:**
+- **Vision range**: Each unit has vision_range attribute (4-7 cells)
+  - Archer: 7 (best vision)
+  - Soldier: 5 (standard vision)
+  - Knight: 4 (restricted by heavy armor)
+  - Catapult: 6 (elevated position)
+- **Circular vision**: Uses Euclidean distance for realistic circular visibility
+- **Light gray fog**: Unexplored areas covered with light gray (192,192,192) overlay
+- **Explored cells persist**: Once seen, terrain remains visible (like classic RTS)
+- **Enemy visibility**: Enemy units only visible when in current vision range
+- **Vision range visualization**: Selected units show light blue overlay of vision area
+- **Dynamic updates**: Fog recalculates automatically after unit movement
+- **P key toggle**: Show all map (75% fog) vs normal (100% fog)
+
+**How Vision Works:**
+```python
+# Circular vision using Euclidean distance
+distance = sqrt((row - unit_row)² + (col - unit_col)²)
+if distance <= vision_range:
+    cell_is_visible = True
+```
+
+**Visibility System:**
+- **visible_cells**: Currently visible cells (dynamic, recalculated per move)
+- **explored_cells**: Permanently revealed terrain (persistent)
+- Fog covers unexplored_cells only
+- Enemy units filtered - only shown if in visible_cells
+
+**Tactical Implications:**
+- **Archers see furthest** - best for scouting
+- **Knights see least** - need support for reconnaissance  
+- **Vision determines targeting** - can't attack what you can't see
+- **Exploration matters** - move units to reveal map
+- **Fog updates per move** - see new areas immediately after movement completes
+
+**Visual Indicators:**
+- Light gray fog on unexplored areas
+- Light blue overlay shows selected unit's vision range
+- Unit info displays VIS: X value
+
+**Testing:**
+```
+✓ Circular vision with Euclidean distance
+✓ Vision range 5 creates circle radius 5, not 10x10 box
+✓ Fog updates after movement animation completes
+✓ Explored cells persist between turns
+✓ Enemy units only visible in vision range
+✓ P key toggles fog opacity
+```
+
+### 0.2 Multiple Moves Per Turn
+**Added:** Units can move multiple times based on remaining mobility.
+
+**Features:**
+- **Mobility consumption**: Each move deducts mobility based on distance
+- **Partial moves allowed**: Move 1 space, then move again if mobility remains
+- **Auto-reselection**: Unit stays selected after partial move
+- **Dynamic valid moves**: Movement options update after each move
+- **Activity tracking**: Unit becomes inactive only when mobility = 0
+
+**How it Works:**
+```python
+# Soldier with 3 mobility
+move 1 space -> 2 mobility left (stays active, auto-reselected)
+move 1 space -> 1 mobility left (stays active)
+move 1 space -> 0 mobility (becomes inactive)
+
+# OR move 3 spaces at once -> 0 mobility (becomes inactive)
+```
+
+**Mobility Deduction:**
+- Deducted when movement animation completes (not when starting)
+- Based on path length: mobility_cost = len(path) - 1
+- Fog of war updates after each completed move
+- Valid moves recalculated with remaining mobility
+
+**Tactical Benefits:**
+- **Flexible positioning**: Reposition and still have moves left
+- **Resource management**: Use mobility efficiently
+- **Scout and retreat**: Move forward to see, move back if threatened
+- **Partial advance**: Inch forward carefully
+
+**Testing:**
+```
+✓ Move 1 space: unit stays active with remaining mobility
+✓ Move full mobility: unit becomes inactive
+✓ Mobility correctly deducted per move
+✓ Valid moves updated after partial move
+✓ Fog updates after each move completion
+```
+
+### 0.3 Direct/Indirect Fire System
 **Added:** Units can have direct fire (needs line of sight) or indirect fire (shoots over obstacles).
 
 **Features:**
