@@ -4,6 +4,13 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
 
 ## Features
 
+### Menu System & Campaign
+- ✅ **Main menu** with campaign and skirmish modes
+- ✅ **Story campaign system** with JSON-based narrative
+- ✅ **Scenario selection** for skirmish play
+- ✅ **Victory/defeat screens** with progression
+- ✅ **State machine architecture** for clean state management
+
 ### Core Systems
 - ✅ **Grid-based map system** with customizable terrain
 - ✅ **Pathfinding system** (BFS) for realistic movement around obstacles
@@ -89,14 +96,12 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
   - Toggleable grid lines
 
 ### Available Scenarios
-- **Scenario 1** - 10x10 small map, 12 units, tutorial-friendly
-- **Scenario 2** - 8x15 rectangular map, 12 units, variety testing
-- **Scenario 3** - 200x100 large battle map, 62 units, varied terrain with swamps and mountains
+- **Scenario 1: The First Battle** - 10x10 small map, 12 units, tutorial-friendly
+- **Scenario 2: The Narrow Valley** - 8x15 rectangular map, 13 units, variety testing
+- **Scenario 3: The Great Plains Battle** - 200x100 large battle map, 39 units, varied terrain
 
-To load a specific scenario, edit [main.py](main.py):
-```python
-scenario = Scenario(scenario_number=3, cell_size=64)
-```
+In Campaign mode, scenarios are played in order with story context.
+In Skirmish mode, any scenario can be selected directly.
 
 ## Installation
 
@@ -127,6 +132,24 @@ pip install pygame numpy
 python main.py
 ```
 
+### Game Modes
+
+**Campaign Mode:**
+- Story-driven progression through all scenarios
+- Narrative context for each battle
+- Automatic advancement to next scenario on victory
+- Play scenarios 1 → 2 → 3 in order
+
+**Skirmish Mode:**
+- Select any scenario to play
+- No story context, pure tactical gameplay
+- Ideal for practice or testing strategies
+
+### Main Menu Navigation
+- **Arrow Keys**: Navigate menu options
+- **ENTER**: Select menu option
+- **ESC**: Quit game or return to main menu
+
 ## Controls
 
 ### Mouse
@@ -143,13 +166,21 @@ python main.py
 - **ESC**: Quit game
 
 ### Gameplay
-1. **Select a unit**: Click on one of your units (player team, blue tooltip border)
-2. **Move**: Click on a green highlighted cell to move there
+1. **Main Menu**: Choose "New Campaign" or "Skirmish"
+   - Campaign: Start story mode from scenario 1
+   - Skirmish: Select any scenario to play
+2. **Story Screen** (Campaign only): Read scenario introduction
+   - Press ENTER to begin battle
+3. **Select a unit**: Click on one of your units (player team, blue tooltip border)
+4. **Move**: Click on a green highlighted cell to move there
    - Unit will move and deduct mobility based on distance
    - If mobility remains, unit stays selected and can move again
-3. **Attack**: Click on a red highlighted enemy to attack (if in vision range)
-4. **End turn**: Press SPACE when done to let enemy take their turn
-5. **Vision**: Notice fog of war clearing as units move - only revealed areas visible
+5. **Attack**: Click on a red highlighted enemy to attack (if in vision range)
+6. **End turn**: Press SPACE when done to let enemy take their turn
+7. **Vision**: Notice fog of war clearing as units move - only revealed areas visible
+8. **Victory/Defeat**: Automatic detection when all units of one side are eliminated
+   - Victory: Continue campaign, replay, or return to menu
+   - Defeat: Retry scenario or return to menu
 
 See [docs/GAMEPLAY.md](docs/GAMEPLAY.md) for detailed gameplay instructions.
 
@@ -157,10 +188,11 @@ See [docs/GAMEPLAY.md](docs/GAMEPLAY.md) for detailed gameplay instructions.
 
 ```
 strategy/
-├── main.py                 # Main game loop and entry point
+├── main.py                 # Main game loop, state machine, and menu system
 ├── scenario.py             # Scenario management (map + units + game logic)
 ├── grid.py                 # Grid rendering and map management
 ├── unit.py                 # Unit class with animations and attributes
+├── projectile.py           # Projectile class for ranged attacks
 ├── constants.py            # Game constants (colors, dimensions)
 ├── requirements.txt        # Python dependencies
 │
@@ -171,22 +203,31 @@ strategy/
 │   │   ├── icon_3.png    # Swamp/Rough terrain (slow)
 │   │   └── icon_4.png    # Mountain/Water (blocked)
 │   │
-│   ├── maps/              # Map and unit configuration files
+│   ├── stories/           # Campaign story files (JSON)
+│   │   ├── scenario_1.json   # Story for scenario 1
+│   │   ├── scenario_2.json   # Story for scenario 2
+│   │   └── scenario_3.json   # Story for scenario 3
+│   │
+│   ├── maps/              # Map and unit configuration files (JSON)
 │   │   ├── map_1.txt     # 10x10 small map
 │   │   ├── map_2.txt     # 8x15 rectangular map
 │   │   ├── map_3.txt     # 200x100 large battle map
-│   │   ├── units_1.txt   # Standard unit placement
-│   │   ├── units_2.txt   # Alternative placement
-│   │   ├── units_3.txt   # Large battle scenario
-│   │   └── units_1_tutorial.txt  # Tutorial setup
+│   │   ├── units_1.json  # Scenario 1 unit placement
+│   │   ├── units_2.json  # Scenario 2 unit placement
+│   │   ├── units_3.json  # Scenario 3 unit placement
+│   │   └── units_1_tutorial.json  # Tutorial setup
 │   │
-│   └── units/             # Unit animations and attributes
-│       ├── soldier.txt   # Soldier stats
-│       ├── archer.txt    # Archer stats
-│       ├── knight.txt    # Knight stats
-│       ├── soldier_*.png # Soldier animations (13 frames)
-│       ├── archer_*.png  # Archer animations (13 frames)
-│       └── knight_*.png  # Knight animations (13 frames)
+│   ├── projectiles/       # Projectile sprite animations
+│   │
+│   └── units/             # Unit animations and attributes (JSON)
+│       ├── soldier.json  # Soldier stats
+│       ├── archer.json   # Archer stats
+│       ├── knight.json   # Knight stats
+│       ├── catapult.json # Catapult stats
+│       ├── soldier_*.png # Soldier animations
+│       ├── archer_*.png  # Archer animations
+│       ├── knight_*.png  # Knight animations
+│       └── catapult_*.png # Catapult animations
 │
 ├── docs/                  # Documentation
 │   ├── README.md         # Documentation index

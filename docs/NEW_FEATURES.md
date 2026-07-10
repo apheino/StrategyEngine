@@ -2,6 +2,80 @@
 
 ## Recent Updates (Latest First)
 
+### 0.0 Menu System & Story Campaign
+**Added:** Complete menu system with state machine and JSON story campaign.
+
+**Features:**
+- **State machine architecture**: Clean separation of game states
+  - MAIN_MENU: Title screen with campaign/skirmish options
+  - STORY_SCREEN: Narrative intro before scenarios
+  - PLAYING: Active gameplay
+  - VICTORY: Success screen with campaign progression
+  - DEFEAT: Failure screen with retry option
+  - SCENARIO_SELECT: Skirmish scenario selection
+
+- **Main menu**:
+  - New Campaign: Start story-driven campaign
+  - Skirmish: Select any scenario without story
+  - Quit: Exit game
+  - Navigation: Arrow keys + ENTER
+
+- **Story campaign system**:
+  - JSON story files (resources/stories/)
+  - Story screens with intro text
+  - Victory/defeat narrative
+  - Automatic campaign progression
+  - Scenario 1 → 2 → 3 flow
+
+- **Skirmish mode**:
+  - Direct scenario selection
+  - No story context
+  - Ideal for practice/testing
+
+- **Victory/defeat detection**:
+  - Automatic when all units of one side eliminated
+  - State transitions to appropriate screen
+  - Campaign: Continue to next scenario
+  - Skirmish: Replay or return to menu
+
+**Story Files:**
+```json
+// resources/stories/scenario_1.json
+{
+  "scenario_number": 1,
+  "title": "The First Battle",
+  "intro_text": [...],
+  "victory_text": [...],
+  "defeat_text": [...],
+  "next_scenario": 2
+}
+```
+
+**Menu Navigation:**
+- UP/DOWN arrows to navigate
+- ENTER to select
+- ESC to quit or return to main menu
+- Story screen: ENTER to begin, ESC to menu
+- In-game: ESC returns to main menu
+
+**Technical:**
+- State-based event handling
+- Separate rendering per state
+- JSON story loading with error handling
+- Campaign vs skirmish mode tracking
+- Victory/defeat condition checking
+
+**Testing:**
+```
+✓ State machine transitions work correctly
+✓ Menu navigation with keyboard
+✓ Story files load from JSON
+✓ Campaign mode progresses through scenarios
+✓ Skirmish mode allows direct selection
+✓ Victory/defeat detection automatic
+✓ All existing gameplay features preserved
+```
+
 ### 0.1 Fog of War System
 **Added:** Fog of war with vision range and tactical visibility.
 

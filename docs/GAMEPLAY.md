@@ -1,5 +1,26 @@
 # Movement and Turn System
 
+## Game Modes
+
+### Campaign Mode
+- **Story-driven progression** through scenarios 1, 2, and 3
+- **Narrative context** provides background for each battle
+- **Automatic advancement** to next scenario on victory
+- **Story screens** show mission briefing before battle and results after
+
+### Skirmish Mode
+- **Direct scenario selection** - choose any scenario
+- **No story context** - pure tactical gameplay
+- **Practice mode** - test strategies without campaign progression
+- **Replay any scenario** without starting from beginning
+
+## Main Menu
+
+Use **Arrow Keys** to navigate and **ENTER** to select:
+- **New Campaign**: Start story mode from Scenario 1
+- **Skirmish**: Open scenario selection menu
+- **Quit**: Exit game
+
 ## Team System
 
 The game uses a two-team system:
