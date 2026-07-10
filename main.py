@@ -252,7 +252,7 @@ def draw(fps):
             attack_display = str(effective_attack)
         
         info_text = small_font.render(
-            f"Selected: {unit.unit_type} | HP: {unit.health}/{unit.max_health} | ATK: {attack_display} | MOB: {unit.mobility}/{effective_mobility}",
+            f"Selected: {unit.unit_type} | HP: {unit.health}/{unit.max_health} | ATK: {attack_display} | MOB: {unit.mobility}/{effective_mobility} | VIS: {unit.vision_range}",
             True, (255, 255, 100)  # Yellow text
         )
         screen.blit(info_text, (10, SCREEN_HEIGHT - 30))

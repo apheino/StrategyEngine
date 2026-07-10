@@ -365,9 +365,9 @@ class Scenario:
         
         # Determine fog opacity based on show_all_map setting
         if self.show_all_map:
-            fog_color = (0, 0, 0, int(255 * 0.75))  # 75% opacity - can see through
+            fog_color = (192, 192, 192, int(255 * 0.75))  # Light gray with 75% opacity
         else:
-            fog_color = (0, 0, 0, 255)  # 100% opacity - completely hidden
+            fog_color = (192, 192, 192, 255)  # Light gray with 100% opacity
         
         # Iterate through all grid cells
         for row in range(self.grid.grid_height):
@@ -538,6 +538,20 @@ class Scenario:
             # Draw yellow border for selected unit
             pygame.draw.rect(screen, (255, 255, 0), 
                            (x, y, scaled_cell_size, scaled_cell_size), 3)
+            
+            # Draw vision range visualization (light blue overlay)
+            vision = self.selected_unit.vision_range
+            unit_row, unit_col = self.selected_unit.position
+            
+            for r in range(max(0, unit_row - vision), min(self.grid.grid_height, unit_row + vision + 1)):
+                for c in range(max(0, unit_col - vision), min(self.grid.grid_width, unit_col + vision + 1)):
+                    vx = center_x + c * scaled_cell_size
+                    vy = center_y + r * scaled_cell_size
+                    
+                    # Draw semi-transparent light blue overlay for vision range
+                    vision_overlay = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
+                    vision_overlay.fill((135, 206, 250, 40))  # Sky blue with low alpha
+                    screen.blit(vision_overlay, (vx, vy))
     
     def update_hover(self, mouse_x, mouse_y, screen_width, screen_height):
         """
