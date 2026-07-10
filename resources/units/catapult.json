@@ -1,0 +1,15 @@
+{
+  "name": "Catapult",
+  "description": "Artillery unit with long range and indirect fire. Siege weapon: slow but powerful, can fire over obstacles",
+  "max_health": 70,
+  "attack_power": 35,
+  "defense": 4,
+  "attack_range": 6,
+  "max_mobility": 2,
+  "speed": 1.5,
+  "projectile_speed": 3.0,
+  "projectile_count": 1,
+  "hit_chance": 0.65,
+  "damage_std": 5.0,
+  "fire_type": "indirect"
+}

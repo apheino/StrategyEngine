@@ -28,6 +28,7 @@ import pygame
 import os
 import math
 import random
+import json
 
 
 class Unit:
@@ -167,21 +168,24 @@ class Unit:
     
     def load_attributes(self):
         """
-        Load unit attributes from a text file
+        Load unit attributes from a JSON file
         
-        Expected file: resources/units/{unit_type}.txt
+        Expected file: resources/units/{unit_type}.json
         
         Format:
-            max_health=100
-            attack_power=20
-            defense=5
-            attack_range=1
-            max_mobility=3
-            speed=2.0
-        
-        Lines starting with # are comments and ignored
+            {
+                "name": "Soldier",
+                "description": "Balanced infantry unit",
+                "max_health": 100,
+                "attack_power": 20,
+                "defense": 5,
+                "attack_range": 1,
+                "max_mobility": 3,
+                "speed": 2.0,
+                ...
+            }
         """
-        filepath = f"resources/units/{self.unit_type}.txt"
+        filepath = f"resources/units/{self.unit_type}.json"
         
         # Default attributes (used if file not found)
         default_attributes = {
@@ -203,29 +207,11 @@ class Unit:
         if os.path.exists(filepath):
             try:
                 with open(filepath, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        # Skip comments and empty lines
-                        if not line or line.startswith('#'):
-                            continue
-                        
-                        # Parse key=value pairs
-                        if '=' in line:
-                            key, value = line.split('=', 1)
-                            key = key.strip()
-                            value = value.strip()
-                            
-                            # Convert to appropriate type
-                            if key in attributes:
-                                try:
-                                    # Try float first (handles both int and float)
-                                    if key == 'fire_type':
-                                        # Keep fire_type as string
-                                        attributes[key] = value
-                                    else:
-                                        attributes[key] = float(value) if '.' in value else int(value)
-                                except ValueError:
-                                    print(f"Warning: Invalid value for {key}: {value}")
+                    data = json.load(f)
+                    # Update attributes with values from JSON
+                    for key in attributes.keys():
+                        if key in data:
+                            attributes[key] = data[key]
                 
                 print(f"Loaded attributes for {self.unit_type} from {filepath}")
             except Exception as e:

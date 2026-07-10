@@ -4,22 +4,25 @@
 
 ### Attribute Loading System
 
-Unit attributes are now loaded from text files located in `resources/units/{unit_type}.txt`.
+Unit attributes are now loaded from JSON files located in `resources/units/{unit_type}.json`.
 
 **File Format:**
-```
-# Comments start with #
-max_health=100
-attack_power=20
-defense=5
-attack_range=1
-max_mobility=3
-speed=2.0
-projectile_speed=8.0
-projectile_count=1
-hit_chance=0.95
-damage_std=3.0
-fire_type=direct
+```json
+{
+  "name": "Soldier",
+  "description": "Balanced infantry unit with moderate stats",
+  "max_health": 100,
+  "attack_power": 20,
+  "defense": 5,
+  "attack_range": 1,
+  "max_mobility": 3,
+  "speed": 2.0,
+  "projectile_speed": 0.0,
+  "projectile_count": 1,
+  "hit_chance": 0.95,
+  "damage_std": 3.0,
+  "fire_type": "direct"
+}
 ```
 
 If a unit's attribute file is not found, default values are used.
@@ -175,11 +178,13 @@ Stage 3: attack_power=14, hit_chance=0.80, damage_std=1.5  (elite: high damage, 
 ### Configuration
 
 Edit unit definition files:
-```
-# resources/units/archer.txt
-attack_power=12     # Median damage (center of distribution)
-damage_std=2.5      # Standard deviation (controls variance)
-hit_chance=0.75     # 75% chance to hit per projectile
+```json
+// resources/units/archer.json
+{
+  "attack_power": 12,     // Median damage (center of distribution)
+  "damage_std": 2.5,      // Standard deviation (controls variance)
+  "hit_chance": 0.75      // 75% chance to hit per projectile
+}
 ```
 
 Lower `damage_std` = more reliable/consistent unit (good for strategy)
@@ -273,7 +278,7 @@ Each unit type has 13 animation frames total (39 files for all 3 types).
 ### Adding New Unit Types
 
 To add a new unit type:
-1. Create attribute file: `resources/units/{unit_type}.txt`
+1. Create attribute file: `resources/units/{unit_type}.json`
 2. Create animation frames: `resources/units/{unit_type}_{animation}_{frame}.png`
 3. Add unit to scenario units file with the new unit_type name
 

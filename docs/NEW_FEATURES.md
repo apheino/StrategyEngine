@@ -200,9 +200,11 @@ Archer fires 3 arrows:
 
 **Implementation:**
 ```python
-# In unit file: resources/units/archer.txt
-projectile_count=3
-projectile_speed=4.0
+# In unit file: resources/units/archer.json
+{
+  "projectile_count": 3,
+  "projectile_speed": 4.0
+}
 
 # Creates multiple projectiles with horizontal offset
 for i in range(projectile_count):
@@ -509,24 +511,28 @@ if self.is_dying and animation_complete:
 - Provides tactical information about your own units and enemies
 
 ### 4. File-Based Unit Attributes
-**Changed:** Unit stats are now loaded from external text files instead of hardcoded values.
+**Changed:** Unit stats are now loaded from external JSON files instead of hardcoded values.
 
 **Attribute Files:**
 ```
-resources/units/soldier.txt
-resources/units/archer.txt
-resources/units/knight.txt
+resources/units/soldier.json
+resources/units/archer.json
+resources/units/knight.json
+resources/units/catapult.json
 ```
 
 **File Format:**
-```
-# Comments start with #
-max_health=100
-attack_power=20
-defense=5
-attack_range=1
-max_mobility=3
-speed=2.0
+```json
+{
+  "name": "Soldier",
+  "description": "Balanced infantry unit",
+  "max_health": 100,
+  "attack_power": 20,
+  "defense": 5,
+  "attack_range": 1,
+  "max_mobility": 3,
+  "speed": 2.0
+}
 ```
 
 **Benefits:**
