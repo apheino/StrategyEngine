@@ -106,8 +106,8 @@ class Scenario:
         # FOG OF WAR SYSTEM
         # ========================================
         
-        # Fog of war toggle (S key to toggle)
-        self.fog_of_war_enabled = True  # By default, only show visible cells
+        # Fog of war toggle (P key to toggle)
+        self.show_all_map = False  # By default, hide unseen areas completely (True = show with 75% fog)
         self.visible_cells = set()  # Set of (row, col) tuples visible to player
         
         # ========================================
@@ -336,15 +336,12 @@ class Scenario:
         """
         Draw fog of war overlay on unseen cells
         
-        If fog_of_war_enabled is True, draws 75% opacity black overlay
-        on all cells not in self.visible_cells set.
+        If show_all_map is False (default), draws 100% opacity black overlay (completely hidden)
+        If show_all_map is True, draws 75% opacity black overlay (semi-transparent)
         
         Args:
             screen (pygame.Surface): Surface to draw on
         """
-        if not self.fog_of_war_enabled:
-            return  # Fog of war is disabled, don't draw anything
-        
         # Get screen dimensions
         screen_width = screen.get_width()
         screen_height = screen.get_height()
@@ -359,8 +356,11 @@ class Scenario:
         center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
         center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
         
-        # Create semi-transparent overlay surface
-        fog_color = (0, 0, 0, int(255 * 0.75))  # Black with 75% opacity
+        # Determine fog opacity based on show_all_map setting
+        if self.show_all_map:
+            fog_color = (0, 0, 0, int(255 * 0.75))  # 75% opacity - can see through
+        else:
+            fog_color = (0, 0, 0, 255)  # 100% opacity - completely hidden
         
         # Iterate through all grid cells
         for row in range(self.grid.grid_height):
@@ -408,6 +408,11 @@ class Scenario:
             if unit.is_alive:
                 # Use interpolated position for smooth animation
                 row, col = unit.get_current_position()
+                
+                # Only draw enemy units if they are visible or show_all_map is enabled
+                if unit.team != 0:  # Enemy unit
+                    if not self.show_all_map and (row, col) not in self.visible_cells:
+                        continue  # Skip drawing this enemy unit
                 
                 # Calculate screen position
                 x = center_x + col * scaled_cell_size
@@ -1207,6 +1212,9 @@ class Scenario:
                 # Placeholder: Enemy units do nothing for now
                 # Future: Calculate move, attack, etc.
                 unit.is_active = False
+        
+        # Recalculate visibility after enemy turn (for when AI actually moves units)
+        self.calculate_visible_cells()
         
         # End enemy turn
         self.end_turn()

@@ -107,11 +107,11 @@ def handle_events():
                 scenario.show_combat_messages = not scenario.show_combat_messages
                 status = "ON" if scenario.show_combat_messages else "OFF"
                 print(f"Damage numbers display: {status}")
-            elif event.key == pygame.K_s:
-                # S key - toggle fog of war
-                scenario.fog_of_war_enabled = not scenario.fog_of_war_enabled
-                status = "ON" if scenario.fog_of_war_enabled else "OFF"
-                print(f"Fog of war: {status}")
+            elif event.key == pygame.K_p:
+                # P key - toggle show all map (75% fog vs 100% fog)
+                scenario.show_all_map = not scenario.show_all_map
+                status = "ON" if scenario.show_all_map else "OFF"
+                print(f"Show all map (75% fog): {status}")
         
         # Pass ALL events to grid for pan/zoom tracking
         # Grid needs to track mouse down/move/up for drag detection
@@ -229,7 +229,7 @@ def draw(fps):
         "Hover for unit info",
         "SPACE: End turn",
         "H: Toggle damage #s",
-        "S: Toggle fog of war",
+        "P: Show all map",
         "G: Toggle grid"
     ]
     for i, text in enumerate(instructions):
