@@ -1,0 +1,19 @@
+# Units configuration for map_1
+# Format: unit_type,team,row,col
+# Teams: 0 = Blue (bottom), 1 = Red (top)
+
+# Blue team (Team 0) - Starting at bottom
+soldier,0,7,3
+soldier,0,7,6
+archer,0,8,2
+archer,0,8,7
+knight,0,8,4
+knight,0,8,5
+
+# Red team (Team 1) - Starting at top
+soldier,1,2,3
+soldier,1,2,6
+archer,1,1,2
+archer,1,1,7
+knight,1,1,4
+knight,1,1,5

@@ -1,0 +1,11 @@
+# Alternative unit configuration for map_1 - Tutorial mode
+# Format: unit_type,team,row,col
+# Fewer units for learning the game
+
+# Blue team (Team 0) - Player (bottom)
+soldier,0,8,4
+archer,0,8,5
+
+# Red team (Team 1) - Tutorial opponent (top)
+soldier,1,1,4
+archer,1,1,5

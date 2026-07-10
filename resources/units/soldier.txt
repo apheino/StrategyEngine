@@ -1,0 +1,15 @@
+# Soldier unit attributes
+# Balanced infantry unit with moderate stats
+# Frontline fighter: medium health, medium damage, medium mobility
+
+max_health=100
+attack_power=22
+defense=6
+attack_range=1
+max_mobility=3
+speed=2.0
+projectile_speed=0.0
+projectile_count=1
+hit_chance=0.95
+damage_std=3.0
+fire_type=direct

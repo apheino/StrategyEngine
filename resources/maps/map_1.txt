@@ -1,0 +1,19 @@
+# Map Definition Format:
+# Each cell is defined as: icon_id,passability
+# Passability: 0=easy passing, 1=slow passing, 2=not passable
+# Cells are separated by spaces
+# Lines starting with # are comments
+#
+# Icon 1 = Shoreline (easy passing)
+# Icon 2 = Grassland (easy passing)
+
+1,0 1,0 1,0 1,0 1,0 1,0 1,0 1,0 1,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 2,0 1,0
+1,0 1,0 1,0 1,0 1,0 1,0 1,0 1,0 1,0 1,0

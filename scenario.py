@@ -1,0 +1,1152 @@
+"""
+Scenario management - combines maps, units, and game logic
+
+This module orchestrates the game scenario by:
+- Loading and managing the map (terrain)
+- Loading and managing units (player and enemy)
+- Handling player interaction (selection, movement, attacks)
+- Tracking game state (turn, selected unit, valid actions)
+- Managing projectiles and combat
+- Rendering units, projectiles, and UI overlays
+
+Key responsibilities:
+- Scenario initialization from files
+- Unit movement validation and execution
+- Attack validation and execution
+- Turn management (player and enemy)
+- Coordinate conversions (screen to grid)
+- Hover detection and tooltips
+"""
+import os
+import pygame
+from grid import Grid, PASSABLE_EASY, PASSABLE_SLOW, PASSABLE_BLOCKED
+from unit import Unit
+from projectile import Projectile
+
+
+class Scenario:
+    """
+    Game scenario manager
+    
+    Combines map terrain with unit placement to create a complete game scenario.
+    Handles all game logic including movement, combat, turn management, and rendering.
+    
+    A scenario consists of:
+    - Map terrain data (loaded from resources/maps/map_n.txt)
+    - Unit placement data (loaded from resources/maps/units_n.txt)
+    - Game state (current turn, selected unit, valid actions)
+    - Active projectiles in flight
+    """
+    
+    def __init__(self, scenario_number=1, cell_size=64, units_file=None):
+        """
+        Initialize and load a complete game scenario
+        
+        Loads map terrain and unit placement from files, initializes game state.
+        Scenario files are expected in resources/maps/ directory.
+        
+        Args:
+            scenario_number (int): Scenario ID to load (1, 2, 3, etc.)
+            cell_size (int): Base size of grid cells in pixels (default 64)
+            units_file (str, optional): Custom units file name (e.g., "units_1_tutorial.txt")
+                                      If None, uses "units_{scenario_number}.txt"
+        """
+        self.scenario_number = scenario_number
+        self.cell_size = cell_size
+        
+        # ========================================
+        # LOAD MAP
+        # ========================================
+        
+        # Load map terrain from file
+        map_file = f"map_{scenario_number}.txt"
+        self.grid = Grid(cell_size=cell_size, map_file=map_file)
+        
+        # ========================================
+        # LOAD UNITS
+        # ========================================
+        
+        # Load unit placement from file
+        if units_file is None:
+            units_file = f"units_{scenario_number}.txt"
+        self.units = self.load_units(units_file)
+        
+        # ========================================
+        # PLAYER INTERACTION STATE
+        # ========================================
+        
+        # Currently selected player unit (for movement and attacks)
+        self.selected_unit = None
+        
+        # Valid move destinations for selected unit (list of (row, col) tuples)
+        self.valid_moves = []
+        
+        # Valid attack targets for selected unit (list of enemy Unit objects)
+        self.valid_attacks = []
+        
+        # Movement paths (maps destination -> list of waypoints for pathfinding)
+        self.movement_paths = {}
+        
+        # Unit currently under mouse cursor (for tooltip display)
+        self.hovered_unit = None
+        
+        # ========================================
+        # COMBAT STATE
+        # ========================================
+        
+        # Projectiles currently in flight (list of Projectile objects)
+        self.projectiles = []
+        
+        # Hit/miss feedback system
+        self.combat_messages = []  # List of (message, position, timestamp, color) tuples
+        self.show_combat_messages = False  # Toggle for showing hit/miss text (press H to enable)
+        
+        # ========================================
+        # TURN MANAGEMENT
+        # ========================================
+        
+        # Current turn (0 = player, 1 = enemy)
+        self.current_turn = 0
+        
+        print(f"Scenario {scenario_number} loaded: {len(self.units)} units on {self.grid.grid_height}x{self.grid.grid_width} map")
+    
+    def load_units(self, units_file):
+        """
+        Load unit positions and types from file
+        
+        Units file format:
+        - One unit per line: unit_type,team,row,col
+        - Lines starting with # are comments
+        - Empty lines are skipped
+        
+        Example:
+        # Player units (team 0)
+        soldier,0,1,1
+        archer,0,1,2
+        # Enemy units (team 1)
+        knight,1,8,8
+        
+        Args:
+            units_file (str): Filename (will look in resources/maps/)
+        
+        Returns:
+            list: List of Unit objects
+        """
+        units = []
+        
+        # If units_file is just a filename, prepend resources/maps/
+        if not os.path.dirname(units_file):
+            units_file = f"resources/maps/{units_file}"
+        
+        if not os.path.exists(units_file):
+            print(f"Warning: Units file {units_file} not found. No units loaded.")
+            return units
+        
+        try:
+            with open(units_file, 'r') as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    
+                    # Skip empty lines and comments
+                    if not line or line.startswith('#'):
+                        continue
+                    
+                    # Parse unit data
+                    try:
+                        parts = line.split(',')
+                        if len(parts) != 4:
+                            print(f"Warning: Invalid format on line {line_num}: {line}")
+                            continue
+                        
+                        unit_type = parts[0].strip()
+                        team = int(parts[1].strip())
+                        row = int(parts[2].strip())
+                        col = int(parts[3].strip())
+                        
+                        # Validate position is within map bounds
+                        if row < 0 or row >= self.grid.grid_height or col < 0 or col >= self.grid.grid_width:
+                            print(f"Warning: Unit position ({row},{col}) out of bounds on line {line_num}")
+                            continue
+                        
+                        # Create unit
+                        unit = Unit(unit_type=unit_type, team=team, position=(row, col))
+                        units.append(unit)
+                        
+                    except ValueError as e:
+                        print(f"Warning: Error parsing line {line_num}: {e}")
+                        continue
+            
+            print(f"Loaded {len(units)} units from {units_file}")
+        
+        except Exception as e:
+            print(f"Error loading units file {units_file}: {e}")
+        
+        return units
+    
+    def get_unit_at(self, row, col):
+        """
+        Get unit at a specific grid position
+        
+        Only returns alive units that are not in the dying animation state.
+        This prevents selecting or targeting units that are already defeated.
+        
+        Args:
+            row (int): Grid row coordinate
+            col (int): Grid column coordinate
+        
+        Returns:
+            Unit: Unit object at this position, or None if empty/dying unit
+        """
+        for unit in self.units:
+            if unit.position == (row, col) and unit.is_alive and not unit.is_dying:
+                return unit
+        return None
+    
+    def get_units_by_team(self, team):
+        """
+        Get all alive units belonging to a specific team
+        
+        Useful for checking victory conditions or executing team-wide actions.
+        Only includes units with is_alive=True.
+        
+        Args:
+            team (int): Team number (0 = player, 1 = enemy, 2+ = other factions)
+        
+        Returns:
+            list: List of Unit objects belonging to this team
+        """
+        return [unit for unit in self.units if unit.team == team and unit.is_alive]
+    
+    def remove_dead_units(self):
+        """
+        Remove dead units from the active units list
+        
+        Called after death animations complete to clean up defeated units.
+        Units with is_alive=False are removed from the units list.
+        """
+        self.units = [unit for unit in self.units if unit.is_alive]
+    
+    def update(self, dt):
+        """
+        Update all game logic for one frame
+        
+        Updates:
+        - All unit animations and movement interpolation
+        - All projectile positions and collision detection
+        - Removes completed projectiles
+        - Removes units that finished death animation
+        
+        Args:
+            dt (float): Delta time in seconds since last frame
+        """
+        for unit in self.units:
+            unit.update(dt)
+        
+        # Update projectiles
+        for projectile in self.projectiles[:]:  # Copy list to avoid modification during iteration
+            if projectile.update(dt):
+                # Projectile reached target
+                if projectile.target:
+                    # Add hit/miss message with damage
+                    if self.show_combat_messages:
+                        if projectile.is_hit:
+                            # Show actual damage dealt
+                            actual_dmg = getattr(projectile, 'actual_damage', projectile.base_damage)
+                            message = f"-{actual_dmg}"
+                            color = (0, 255, 0)  # Green for damage
+                        else:
+                            # Show 0 for miss
+                            message = "0"
+                            color = (255, 0, 0)  # Red for miss
+                        
+                        # Calculate horizontal offset based on existing messages at this position
+                        existing_at_pos = sum(1 for msg in self.combat_messages if msg[1] == projectile.target.position)
+                        x_offset = (existing_at_pos - 1) * 0.5  # Spread by 0.5 cells horizontally
+                        
+                        self.add_combat_message(message, projectile.target.position, color, x_offset)
+                    
+                    if projectile.is_hit:
+                        # Get actual damage dealt (with variance)
+                        actual_dmg = getattr(projectile, 'actual_damage', projectile.base_damage)
+                        print(f"{projectile.attacker.unit_type}'s projectile hit {projectile.target.unit_type} for {actual_dmg} damage (HP: {projectile.target.health}/{projectile.target.max_health})")
+                        if projectile.target.is_dying:
+                            print(f"{projectile.target.unit_type} is defeated!")
+                    else:
+                        print(f"{projectile.attacker.unit_type}'s projectile missed {projectile.target.unit_type}!")
+                # Remove completed projectiles
+                self.projectiles.remove(projectile)
+        
+        # Update combat messages (fade out old ones)
+        import pygame
+        current_time = pygame.time.get_ticks() / 1000.0
+        self.combat_messages = [msg for msg in self.combat_messages 
+                               if current_time - msg[2] < 1.5]  # Keep messages for 1.5 seconds
+        
+        # Remove units that have finished their death animation
+        self.remove_dead_units()
+    
+    def draw_map(self, screen):
+        """
+        Draw the map terrain
+        
+        Delegates to Grid.draw() which handles terrain tiles and grid lines.
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+        """
+        self.grid.draw(screen)
+    
+    def draw_units(self, screen):
+        """
+        Draw all alive units with their animations and health bars
+        
+        Units are drawn at their interpolated positions for smooth movement animation.
+        Converts grid coordinates to screen coordinates accounting for camera offset and zoom.
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+        """
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        
+        # Calculate grid dimensions (same logic as grid.draw)
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = self.grid.cell_size * self.grid.zoom
+        scaled_grid_width = grid_world_width * self.grid.zoom
+        scaled_grid_height = grid_world_height * self.grid.zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
+        
+        # Draw each unit
+        for unit in self.units:
+            if unit.is_alive:
+                # Use interpolated position for smooth animation
+                row, col = unit.get_current_position()
+                
+                # Calculate screen position
+                x = center_x + col * scaled_cell_size
+                y = center_y + row * scaled_cell_size
+                
+                # Draw unit
+                unit.draw(screen, x, y, scaled_cell_size)
+    
+    def draw_projectiles(self, screen):
+        """
+        Draw all active projectiles with rotation
+        
+        Projectiles are rendered scaled and rotated to face their direction of travel.
+        Accounts for camera offset and zoom level.
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+        """
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        
+        # Calculate grid dimensions (same logic as grid.draw)
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = self.grid.cell_size * self.grid.zoom
+        scaled_grid_width = grid_world_width * self.grid.zoom
+        scaled_grid_height = grid_world_height * self.grid.zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
+        
+        # Draw each projectile
+        for projectile in self.projectiles:
+            # Get current position of projectile
+            row, col = projectile.get_current_position()
+            
+            # Calculate screen position
+            x = center_x + col * scaled_cell_size + scaled_cell_size / 2
+            y = center_y + row * scaled_cell_size + scaled_cell_size / 2
+            
+            # Draw projectile
+            if projectile.sprite:
+                # Scale projectile sprite (smaller than units)
+                scale_factor = self.grid.zoom * 0.8
+                sprite_size = max(8, int(16 * scale_factor))
+                scaled_sprite = pygame.transform.scale(projectile.sprite, (sprite_size, sprite_size))
+                
+                # Rotate sprite to face direction of travel
+                rotated_sprite = pygame.transform.rotate(scaled_sprite, -projectile.angle)
+                
+                # Center the rotated sprite
+                sprite_rect = rotated_sprite.get_rect(center=(x, y))
+                
+                screen.blit(rotated_sprite, sprite_rect)
+    
+    def draw_selection_highlights(self, screen):
+        """
+        Draw UI overlays for valid moves and attacks
+        
+        Renders:
+        - Green highlighted cells for valid move destinations
+        - Red highlighted cells for valid attack targets
+        - Yellow border around selected unit
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+        """
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        
+        # Calculate grid dimensions
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = self.grid.cell_size * self.grid.zoom
+        scaled_grid_width = grid_world_width * self.grid.zoom
+        scaled_grid_height = grid_world_height * self.grid.zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
+        
+        # Draw valid move positions
+        for row, col in self.valid_moves:
+            x = center_x + col * scaled_cell_size
+            y = center_y + row * scaled_cell_size
+            
+            # Draw semi-transparent green overlay
+            overlay = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
+            overlay.fill((0, 255, 0, 80))  # Green with alpha
+            screen.blit(overlay, (x, y))
+            
+            # Draw border
+            pygame.draw.rect(screen, (0, 255, 0), 
+                           (x, y, scaled_cell_size, scaled_cell_size), 2)
+        
+        # Draw attackable enemies
+        for enemy in self.valid_attacks:
+            row, col = enemy.position
+            x = center_x + col * scaled_cell_size
+            y = center_y + row * scaled_cell_size
+            
+            # Draw semi-transparent red overlay
+            overlay = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
+            overlay.fill((255, 0, 0, 100))  # Red with alpha
+            screen.blit(overlay, (x, y))
+            
+            # Draw red border
+            pygame.draw.rect(screen, (255, 0, 0), 
+                           (x, y, scaled_cell_size, scaled_cell_size), 3)
+        
+        # Draw selected unit highlight
+        if self.selected_unit:
+            row, col = self.selected_unit.position
+            x = center_x + col * scaled_cell_size
+            y = center_y + row * scaled_cell_size
+            
+            # Draw yellow border for selected unit
+            pygame.draw.rect(screen, (255, 255, 0), 
+                           (x, y, scaled_cell_size, scaled_cell_size), 3)
+    
+    def update_hover(self, mouse_x, mouse_y, screen_width, screen_height):
+        """
+        Update which unit (if any) is under the mouse cursor
+        
+        Converts mouse screen coordinates to grid coordinates and checks for units.
+        Sets self.hovered_unit for tooltip display. Works for both player and enemy units.
+        
+        Args:
+            mouse_x (int): Mouse X coordinate in screen pixels
+            mouse_y (int): Mouse Y coordinate in screen pixels
+            screen_width (int): Width of screen in pixels
+            screen_height (int): Height of screen in pixels
+        """
+        grid_pos = self.screen_to_grid(mouse_x, mouse_y, screen_width, screen_height)
+        
+        if grid_pos:
+            row, col = grid_pos
+            unit = self.get_unit_at(row, col)
+            
+            # Show hover for any unit
+            self.hovered_unit = unit
+        else:
+            self.hovered_unit = None
+    
+    def draw_hover_info(self, screen, font):
+        """
+        Draw information tooltip for hovered unit
+        
+        Displays unit stats in a semi-transparent box near the mouse cursor.
+        Border color indicates team (blue=player, red=enemy, white=other).
+        Tooltip automatically stays on screen by adjusting position if needed.
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+            font (pygame.Font): Font to use for text rendering
+        """
+        if not self.hovered_unit:
+            return
+        
+        unit = self.hovered_unit
+        
+        # Get mouse position
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        
+        # Determine border color based on team
+        if unit.is_player_unit():
+            border_color = (100, 150, 255)  # Blue for player
+        elif unit.is_enemy_unit():
+            border_color = (255, 100, 100)  # Red for enemy
+        else:
+            border_color = (255, 255, 255)  # White for other teams
+        
+        # Create info text
+        effective_attack = unit.get_effective_attack_power()
+        effective_mobility = unit.get_effective_mobility()
+        effective_projectiles = unit.get_effective_projectile_count()
+        
+        info_lines = [
+            f"{unit.unit_type.capitalize()}",
+            f"HP: {unit.health}/{unit.max_health}",
+            f"Attack: {effective_attack}",
+            f"Defense: {unit.defense}",
+            f"Mobility: {unit.mobility}/{effective_mobility}",
+            f"Range: {unit.attack_range}"
+        ]
+        
+        # Add projectile info for ranged units
+        if effective_projectiles > 1:
+            total_damage = effective_attack * effective_projectiles
+            info_lines.insert(3, f"Total DMG: {total_damage} ({effective_projectiles}x)")
+        
+        # Calculate tooltip size
+        line_height = 22
+        padding = 10
+        max_width = max([font.size(line)[0] for line in info_lines])
+        tooltip_width = max_width + padding * 2
+        tooltip_height = len(info_lines) * line_height + padding * 2
+        
+        # Position tooltip (offset from mouse, keep on screen)
+        tooltip_x = mouse_x + 15
+        tooltip_y = mouse_y + 15
+        
+        # Keep tooltip on screen
+        if tooltip_x + tooltip_width > screen.get_width():
+            tooltip_x = mouse_x - tooltip_width - 15
+        if tooltip_y + tooltip_height > screen.get_height():
+            tooltip_y = mouse_y - tooltip_height - 15
+        
+        # Draw background
+        background = pygame.Surface((tooltip_width, tooltip_height), pygame.SRCALPHA)
+        background.fill((0, 0, 0, 220))  # Semi-transparent black
+        screen.blit(background, (tooltip_x, tooltip_y))
+        
+        # Draw colored border (blue for player, red for enemy)
+        pygame.draw.rect(screen, border_color, 
+                        (tooltip_x, tooltip_y, tooltip_width, tooltip_height), 2)
+        
+        # Draw text
+        for i, line in enumerate(info_lines):
+            text_surface = font.render(line, True, (255, 255, 255))
+            screen.blit(text_surface, (tooltip_x + padding, tooltip_y + padding + i * line_height))
+    
+    def add_combat_message(self, message, position, color=(255, 255, 255), x_offset=0.0):
+        """
+        Add a combat message (HIT/MISS) to display at a position
+        
+        Args:
+            message (str): Text to display (e.g., "HIT!", "MISS")
+            position (tuple): Grid position (row, col) where message should appear
+            color (tuple): RGB color for the message
+            x_offset (float): Horizontal offset in grid cells for message separation
+        """
+        import pygame
+        timestamp = pygame.time.get_ticks() / 1000.0
+        self.combat_messages.append((message, position, timestamp, color, x_offset))
+    
+    def draw_combat_messages(self, screen, font, cell_size, zoom, offset_x, offset_y):
+        """
+        Draw hit/miss messages on screen
+        
+        Messages fade out over time and float upward slightly.
+        
+        Args:
+            screen: Pygame surface to draw on
+            font: Font to use for rendering
+            cell_size: Base cell size
+            zoom: Current zoom level
+            offset_x: Camera X offset
+            offset_y: Camera Y offset
+        """
+        if not self.show_combat_messages:
+            return
+        
+        import pygame
+        current_time = pygame.time.get_ticks() / 1000.0
+        
+        # Calculate grid dimensions and centered position (same as units and projectiles)
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = cell_size * zoom
+        scaled_grid_width = grid_world_width * zoom
+        scaled_grid_height = grid_world_height * zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + offset_y
+        
+        for msg_data in self.combat_messages:
+            message, position, timestamp, color = msg_data[:4]
+            x_offset_cells = msg_data[4] if len(msg_data) > 4 else 0.0
+            
+            # Calculate age of message (0.0 to 1.5 seconds)
+            age = current_time - timestamp
+            if age > 1.5:
+                continue
+            
+            # Fade out over time
+            alpha = int(255 * (1.0 - age / 1.5))
+            
+            # Float upward
+            float_offset = -age * 40  # Move up 40 pixels per second (faster)
+            
+            # Convert grid position to screen position (same as units)
+            row, col = position
+            x = center_x + col * scaled_cell_size + scaled_cell_size / 2 + (x_offset_cells * scaled_cell_size)
+            y = center_y + row * scaled_cell_size + float_offset - 10  # Start just above unit
+            
+            # Render text with alpha
+            text_surface = font.render(message, True, color)
+            text_surface.set_alpha(alpha)
+            
+            # Center text
+            text_rect = text_surface.get_rect(center=(int(x), int(y)))
+            screen.blit(text_surface, text_rect)
+    
+    def reset_all_units_turn(self):
+        """
+        Reset all units for a new turn
+        
+        Calls reset_turn() on all alive units, which restores mobility and
+        sets them to active state.
+        """
+        for unit in self.units:
+            if unit.is_alive:
+                unit.reset_turn()
+    
+    def get_passability_at(self, row, col):
+        """
+        Get terrain passability type at a grid position
+        
+        Returns the passability constant for the terrain at this position.
+        Out-of-bounds positions are considered blocked.
+        
+        Args:
+            row (int): Grid row coordinate
+            col (int): Grid column coordinate
+        
+        Returns:
+            int: PASSABLE_EASY (0), PASSABLE_SLOW (1), or PASSABLE_BLOCKED (2)
+        """
+        if row < 0 or row >= self.grid.grid_height or col < 0 or col >= self.grid.grid_width:
+            return PASSABLE_BLOCKED
+        
+        if 0 <= row < len(self.grid.map_data) and 0 <= col < len(self.grid.map_data[row]):
+            icon_id, passability = self.grid.map_data[row][col]
+            return passability
+        
+        return PASSABLE_BLOCKED
+    
+    def calculate_valid_moves(self, unit):
+        """
+        Calculate all valid move destinations for a unit using BFS pathfinding
+        
+        Uses Breadth-First Search to find all reachable cells within unit's mobility.
+        Takes into account:
+        - Unit's current mobility points
+        - Terrain passability (blocked terrain is impassable)
+        - Slow terrain (halves mobility when starting from it)
+        - Other units (cannot move to occupied cells)
+        - Actual paths (can't move through blocked terrain)
+        
+        Also stores the path to each reachable cell in self.movement_paths.
+        
+        Args:
+            unit (Unit): Unit to calculate moves for
+        
+        Returns:
+            list: List of (row, col) tuples representing valid destinations
+        """
+        if not unit or not unit.is_alive or not unit.is_active:
+            return []
+        
+        valid_moves = []
+        self.movement_paths = {}
+        start_row, start_col = unit.position
+        
+        # Check if starting from slow passable terrain (halves mobility)
+        start_passability = self.get_passability_at(start_row, start_col)
+        effective_mobility = unit.mobility
+        if start_passability == PASSABLE_SLOW:
+            effective_mobility = unit.mobility // 2
+        
+        # BFS to find all reachable cells
+        from collections import deque
+        
+        # Queue contains: (row, col, distance_traveled, path)
+        queue = deque([(start_row, start_col, 0, [(start_row, start_col)])])
+        visited = {(start_row, start_col): 0}  # Maps position -> minimum distance
+        
+        while queue:
+            current_row, current_col, distance, path = queue.popleft()
+            
+            # Try all 4 adjacent cells (up, down, left, right)
+            neighbors = [
+                (current_row - 1, current_col),  # up
+                (current_row + 1, current_col),  # down
+                (current_row, current_col - 1),  # left
+                (current_row, current_col + 1),  # right
+            ]
+            
+            for next_row, next_col in neighbors:
+                # Check if within grid bounds
+                if not (0 <= next_row < self.grid.grid_height and 
+                       0 <= next_col < self.grid.grid_width):
+                    continue
+                
+                # Check if terrain is passable (not blocked)
+                passability = self.get_passability_at(next_row, next_col)
+                if passability == PASSABLE_BLOCKED:
+                    continue
+                
+                # Calculate cost to move to this cell (1 per cell)
+                new_distance = distance + 1
+                
+                # Check if within mobility range
+                if new_distance > effective_mobility:
+                    continue
+                
+                # Check if we've already visited this cell with a shorter path
+                if (next_row, next_col) in visited and visited[(next_row, next_col)] <= new_distance:
+                    continue
+                
+                # Mark as visited
+                visited[(next_row, next_col)] = new_distance
+                
+                # Store the path to this cell
+                new_path = path + [(next_row, next_col)]
+                
+                # Check if destination cell is available (no unit blocking)
+                if not self.get_unit_at(next_row, next_col):
+                    # This is a valid destination
+                    if (next_row, next_col) not in valid_moves:
+                        valid_moves.append((next_row, next_col))
+                        self.movement_paths[(next_row, next_col)] = new_path
+                
+                # Continue searching from this cell (even if occupied, to find cells beyond)
+                queue.append((next_row, next_col, new_distance, new_path))
+        
+        return valid_moves
+    
+    def has_line_of_sight(self, start_pos, target_pos):
+        """
+        Check if there's a clear line of sight between two positions
+        
+        Uses Bresenham's line algorithm to check all cells between start and target.
+        Line of sight is blocked by impassable terrain (mountains, water, etc.)
+        
+        Args:
+            start_pos (tuple): Starting position (row, col)
+            target_pos (tuple): Target position (row, col)
+        
+        Returns:
+            bool: True if line of sight is clear, False if blocked
+        """
+        start_row, start_col = start_pos
+        target_row, target_col = target_pos
+        
+        # Bresenham's line algorithm
+        dx = abs(target_col - start_col)
+        dy = abs(target_row - start_row)
+        
+        x = start_col
+        y = start_row
+        
+        x_inc = 1 if target_col > start_col else -1
+        y_inc = 1 if target_row > start_row else -1
+        
+        # Calculate error
+        if dx > dy:
+            error = dx / 2
+            while x != target_col:
+                x += x_inc
+                error -= dy
+                if error < 0:
+                    y += y_inc
+                    error += dx
+                
+                # Skip checking the start and target positions themselves
+                if (y, x) == target_pos or (y, x) == start_pos:
+                    continue
+                
+                # Check if this cell blocks line of sight
+                if 0 <= y < self.grid.grid_height and 0 <= x < self.grid.grid_width:
+                    if self.get_passability_at(y, x) == PASSABLE_BLOCKED:
+                        return False
+        else:
+            error = dy / 2
+            while y != target_row:
+                y += y_inc
+                error -= dx
+                if error < 0:
+                    x += x_inc
+                    error += dy
+                
+                # Skip checking the start and target positions themselves
+                if (y, x) == target_pos or (y, x) == start_pos:
+                    continue
+                
+                # Check if this cell blocks line of sight
+                if 0 <= y < self.grid.grid_height and 0 <= x < self.grid.grid_width:
+                    if self.get_passability_at(y, x) == PASSABLE_BLOCKED:
+                        return False
+        
+        return True
+    
+    def calculate_valid_attacks(self, unit):
+        """
+        Calculate all valid attack targets for a unit
+        
+        Checks all enemy units and determines which are within attack range.
+        For direct fire units, also checks line of sight.
+        Indirect fire units can shoot over obstacles.
+        
+        Args:
+            unit (Unit): Unit to calculate attacks for
+        
+        Returns:
+            list: List of enemy Unit objects that can be attacked
+        """
+        if not unit or not unit.is_alive or not unit.is_active:
+            return []
+        
+        valid_attacks = []
+        start_row, start_col = unit.position
+        
+        # Check all enemy units
+        for enemy in self.units:
+            # Skip if not an enemy, dead, dying, or same team
+            if enemy.team == unit.team or not enemy.is_alive or enemy.is_dying:
+                continue
+            
+            enemy_row, enemy_col = enemy.position
+            
+            # Calculate Manhattan distance to enemy
+            distance = abs(enemy_row - start_row) + abs(enemy_col - start_col)
+            
+            # Check if within attack range
+            if distance <= unit.attack_range:
+                # For direct fire, check line of sight
+                if unit.fire_type == 'direct':
+                    if self.has_line_of_sight(unit.position, enemy.position):
+                        valid_attacks.append(enemy)
+                    # else: blocked by terrain, can't attack
+                else:
+                    # Indirect fire can shoot over obstacles
+                    valid_attacks.append(enemy)
+        
+        return valid_attacks
+    
+    def attempt_attack(self, row, col):
+        """
+        Attempt to attack an enemy at the given position
+        
+        Validates that target is an enemy within range, then executes the attack.
+        Creates projectile for ranged attacks, applies immediate damage for melee.
+        Unit becomes inactive after attacking (can't move or attack again this turn).
+        
+        Args:
+            row (int): Target grid row
+            col (int): Target grid column
+        
+        Returns:
+            bool: True if attack was successful, False otherwise
+        """
+        if not self.selected_unit:
+            return False
+        
+        # Check if there's an enemy unit at the target position
+        target = self.get_unit_at(row, col)
+        
+        if target and target in self.valid_attacks:
+            # Perform the attack
+            attack_info = self.selected_unit.attack(target)
+            
+            # Create projectile(s) for ranged attacks
+            if attack_info['uses_projectile']:
+                projectile_count = attack_info.get('projectile_count', 1)
+                
+                # Create multiple projectiles with offset for visual variety
+                for i in range(projectile_count):
+                    # Calculate visual offset for spread effect
+                    if projectile_count > 1:
+                        # Spread projectiles perpendicular to flight direction
+                        spread_factor = (i / (projectile_count - 1)) - 0.5  # -0.5 to 0.5
+                        spread_factor *= 0.4  # Scale down the spread
+                        
+                        # Calculate perpendicular offset
+                        delta_row = target.position[0] - self.selected_unit.position[0]
+                        delta_col = target.position[1] - self.selected_unit.position[1]
+                        
+                        # Perpendicular is (-delta_col, delta_row) rotated 90 degrees
+                        offset_row = -delta_col * spread_factor * 0.2
+                        offset_col = delta_row * spread_factor * 0.2
+                    else:
+                        offset_row, offset_col = 0.0, 0.0
+                    
+                    projectile = Projectile(
+                        start_pos=self.selected_unit.position,
+                        target_pos=target.position,
+                        speed=attack_info['projectile_speed'],
+                        sprite_name=attack_info['sprite_name'],
+                        attacker=self.selected_unit,
+                        target=target,
+                        base_damage=attack_info['base_damage'],  # Base damage (will vary with Gaussian)
+                        offset=(offset_row, offset_col),
+                        hit_chance=attack_info['hit_chance']
+                    )
+                    
+                    # Add stagger delay so projectiles launch sequentially
+                    projectile.progress = -i * 0.12  # Negative progress creates a delay
+                    
+                    self.projectiles.append(projectile)
+                
+                if projectile_count > 1:
+                    print(f"{self.selected_unit.unit_type} fired {projectile_count} projectiles at {target.unit_type}")
+                else:
+                    print(f"{self.selected_unit.unit_type} fired projectile at {target.unit_type}")
+            else:
+                # Melee attack - damage already applied with hit/miss determined
+                is_hit = attack_info.get('hit', False)
+                
+                # Add hit/miss message with damage
+                if self.show_combat_messages:
+                    if is_hit:
+                        # Show actual damage dealt
+                        message = f"-{attack_info['damage']}"
+                        color = (0, 255, 0)  # Green for damage
+                    else:
+                        # Show 0 for miss
+                        message = "0"
+                        color = (255, 0, 0)  # Red for miss
+                    self.add_combat_message(message, target.position, color, 0.0)
+                
+                if is_hit:
+                    print(f"{self.selected_unit.unit_type} attacked {target.unit_type} for {attack_info['damage']} damage (HP: {target.health}/{target.max_health})")
+                    
+                    # Check if target is dying
+                    if target.is_dying:
+                        print(f"{target.unit_type} is defeated!")
+                else:
+                    print(f"{self.selected_unit.unit_type} missed {target.unit_type}!")
+            
+            # Mark unit as inactive after attacking
+            self.selected_unit.is_active = False
+            
+            # Deselect after attacking
+            self.deselect_unit()
+            return True
+        
+        return False
+    
+    def select_unit(self, row, col):
+        """
+        Select a player unit at given position
+        
+        Only allows selection during player turn (turn 0).
+        Only player units (team 0) that are alive and active can be selected.
+        Calculates and stores valid moves and attacks for the selected unit.
+        
+        Args:
+            row (int): Grid row coordinate
+            col (int): Grid column coordinate
+        
+        Returns:
+            bool: True if unit was selected, False otherwise
+        """
+        # Only allow selection during player turn
+        if self.current_turn != 0:
+            return False
+        
+        unit = self.get_unit_at(row, col)
+        
+        # Can only select player units (team 0) that are active
+        if unit and unit.team == 0 and unit.is_alive and unit.is_active:
+            self.selected_unit = unit
+            self.valid_moves = self.calculate_valid_moves(unit)
+            self.valid_attacks = self.calculate_valid_attacks(unit)
+            print(f"Selected {unit.unit_type} at {unit.position}, {len(self.valid_moves)} valid moves, {len(self.valid_attacks)} attackable enemies")
+            return True
+        else:
+            self.deselect_unit()
+            return False
+    
+    def deselect_unit(self):
+        """
+        Deselect currently selected unit and clear valid actions
+        
+        Clears selected_unit, valid_moves, valid_attacks, and movement_paths.
+        """
+        self.selected_unit = None
+        self.valid_moves = []
+        self.valid_attacks = []
+        self.movement_paths = {}
+    
+    def attempt_move_unit(self, row, col):
+        """
+        Attempt to move the selected unit to a destination
+        
+        Validates that destination is in the valid_moves list, then executes movement.
+        Unit becomes inactive after moving (can't move or attack again this turn).
+        
+        Args:
+            row (int): Destination grid row
+            col (int): Destination grid column
+        
+        Returns:
+            bool: True if move was successful, False otherwise
+        """
+        if not self.selected_unit:
+            return False
+        
+        # Check if destination is valid
+        if (row, col) in self.valid_moves:
+            # Move the unit along the calculated path
+            path = self.movement_paths.get((row, col))
+            self.selected_unit.move_to((row, col), path=path)
+            self.selected_unit.is_active = False  # Unit has moved, cannot move again this turn
+            print(f"Moved {self.selected_unit.unit_type} to {row},{col}")
+            
+            # Deselect after moving
+            self.deselect_unit()
+            return True
+        
+        return False
+    
+    def handle_click(self, row, col):
+        """
+        Handle a click on a grid cell
+        
+        Click behavior depends on current state:
+        - If unit selected: Try to attack target, or move to cell, or deselect
+        - If no unit selected: Try to select unit at clicked cell
+        
+        Only processes clicks during player turn (turn 0).
+        
+        Args:
+            row (int): Grid row clicked
+            col (int): Grid column clicked
+        """
+        if self.current_turn == 0:  # Player turn
+            # If we have a selected unit, try to attack or move
+            if self.selected_unit:
+                # Check if clicking on an attackable enemy
+                if self.attempt_attack(row, col):
+                    return  # Attack successful
+                
+                # Try to move
+                if self.attempt_move_unit(row, col):
+                    return  # Move successful
+            
+            # Otherwise, try to select a unit at this position
+            self.select_unit(row, col)
+    
+    def screen_to_grid(self, screen_x, screen_y, screen_width, screen_height):
+        """
+        Convert screen pixel coordinates to grid coordinates
+        
+        Accounts for camera offset, zoom level, and grid centering.
+        Returns None if click is outside the grid bounds.
+        
+        Args:
+            screen_x (int): Screen X coordinate in pixels
+            screen_y (int): Screen Y coordinate in pixels
+            screen_width (int): Width of screen in pixels
+            screen_height (int): Height of screen in pixels
+        
+        Returns:
+            tuple: (row, col) grid coordinates, or None if outside grid
+        """
+        # Calculate grid dimensions (same logic as draw methods)
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = self.grid.cell_size * self.grid.zoom
+        scaled_grid_width = grid_world_width * self.grid.zoom
+        scaled_grid_height = grid_world_height * self.grid.zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
+        
+        # Convert to grid coordinates
+        grid_x = (screen_x - center_x) / scaled_cell_size
+        grid_y = (screen_y - center_y) / scaled_cell_size
+        
+        col = int(grid_x)
+        row = int(grid_y)
+        
+        # Check if within bounds
+        if 0 <= row < self.grid.grid_height and 0 <= col < self.grid.grid_width:
+            return (row, col)
+        
+        return None
+    
+    def execute_enemy_turn(self):
+        """
+        Execute AI logic for enemy units (team 1)
+        
+        Placeholder for future AI implementation.
+        Currently just marks all enemy units as inactive and ends turn.
+        
+        Future implementation should:
+        - Calculate moves for each enemy unit
+        - Identify attack targets
+        - Execute movement and attacks
+        - Use strategy/tactics
+        """
+        print("Enemy turn - AI placeholder")
+        
+        # TODO: Implement AI logic here
+        # For now, just reset enemy units and end turn
+        enemy_units = self.get_units_by_team(1)
+        
+        for unit in enemy_units:
+            if unit.is_alive and unit.is_active:
+                # Placeholder: Enemy units do nothing for now
+                # Future: Calculate move, attack, etc.
+                unit.is_active = False
+        
+        # End enemy turn
+        self.end_turn()
+    
+    def end_turn(self):
+        """
+        End the current turn and switch to next player
+        
+        Switches current_turn between 0 (player) and 1 (enemy).
+        Resets all units for the new turn (restores mobility, sets active).
+        Deselects any selected unit.
+        If switching to enemy turn, automatically executes AI.
+        """
+        # Switch turn
+        self.current_turn = 1 - self.current_turn
+        
+        # Reset units for the new turn
+        active_team_units = self.get_units_by_team(self.current_turn)
+        for unit in active_team_units:
+            unit.reset_turn()
+        
+        # Deselect any selected unit
+        self.deselect_unit()
+        
+        turn_name = "Player" if self.current_turn == 0 else "Enemy"
+        print(f"\n{turn_name} turn started")
+        
+        # If it's enemy turn, execute AI
+        if self.current_turn == 1:
+            self.execute_enemy_turn()
