@@ -103,11 +103,22 @@ class Scenario:
         self.show_combat_messages = False  # Toggle for showing hit/miss text (press H to enable)
         
         # ========================================
+        # FOG OF WAR SYSTEM
+        # ========================================
+        
+        # Fog of war toggle (S key to toggle)
+        self.fog_of_war_enabled = True  # By default, only show visible cells
+        self.visible_cells = set()  # Set of (row, col) tuples visible to player
+        
+        # ========================================
         # TURN MANAGEMENT
         # ========================================
         
         # Current turn (0 = player, 1 = enemy)
         self.current_turn = 0
+        
+        # Calculate initial visible cells for player
+        self.calculate_visible_cells()
         
         print(f"Scenario {scenario_number} loaded: {len(self.units)} units on {self.grid.grid_height}x{self.grid.grid_width} map")
     
@@ -218,6 +229,30 @@ class Scenario:
         """
         return [unit for unit in self.units if unit.team == team and unit.is_alive]
     
+    def calculate_visible_cells(self):
+        """
+        Calculate which cells are visible to the player (team 0)
+        
+        Each player unit can see cells within their vision_range.
+        Uses Chebyshev distance (allows diagonal vision).
+        Updates self.visible_cells set with (row, col) tuples.
+        """
+        self.visible_cells = set()
+        
+        # Get all player units
+        player_units = self.get_units_by_team(0)
+        
+        # For each player unit, add all cells within vision range
+        for unit in player_units:
+            row, col = unit.position
+            vision = unit.vision_range
+            
+            # Check all cells within vision range (Chebyshev distance)
+            for r in range(max(0, row - vision), min(self.grid.grid_height, row + vision + 1)):
+                for c in range(max(0, col - vision), min(self.grid.grid_width, col + vision + 1)):
+                    # Add cell to visible set
+                    self.visible_cells.add((r, c))
+    
     def remove_dead_units(self):
         """
         Remove dead units from the active units list
@@ -296,6 +331,39 @@ class Scenario:
             screen (pygame.Surface): Surface to draw on
         """
         self.grid.draw(screen)
+    
+    def draw_fog_of_war(self, screen):
+        """
+        Draw fog of war overlay on unseen cells
+        
+        If fog_of_war_enabled is True, draws 75% opacity black overlay
+        on all cells not in self.visible_cells set.
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+        """
+        if not self.fog_of_war_enabled:
+            return  # Fog of war is disabled, don't draw anything
+        
+        # Create semi-transparent overlay surface
+        fog_color = (0, 0, 0, int(255 * 0.75))  # Black with 75% opacity
+        
+        # Iterate through all grid cells
+        for row in range(self.grid.grid_height):
+            for col in range(self.grid.grid_width):
+                # Skip visible cells
+                if (row, col) in self.visible_cells:
+                    continue
+                
+                # Calculate screen position for this cell
+                x, y = self.grid.grid_to_screen(row, col)
+                
+                # Create fog surface for this cell
+                fog_surface = pygame.Surface((self.grid.cell_size, self.grid.cell_size), pygame.SRCALPHA)
+                fog_surface.fill(fog_color)
+                
+                # Draw fog overlay
+                screen.blit(fog_surface, (x, y))
     
     def draw_units(self, screen):
         """
@@ -1024,6 +1092,9 @@ class Scenario:
             self.selected_unit.is_active = False  # Unit has moved, cannot move again this turn
             print(f"Moved {self.selected_unit.unit_type} to {row},{col}")
             
+            # Update visible cells after player unit moves
+            self.calculate_visible_cells()
+            
             # Deselect after moving
             self.deselect_unit()
             return True
@@ -1141,6 +1212,10 @@ class Scenario:
         active_team_units = self.get_units_by_team(self.current_turn)
         for unit in active_team_units:
             unit.reset_turn()
+        
+        # Update visible cells if switching to player turn
+        if self.current_turn == 0:
+            self.calculate_visible_cells()
         
         # Deselect any selected unit
         self.deselect_unit()

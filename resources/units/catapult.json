@@ -11,5 +11,6 @@
   "projectile_count": 1,
   "hit_chance": 0.65,
   "damage_std": 5.0,
-  "fire_type": "indirect"
+  "fire_type": "indirect",
+  "vision_range": 6
 }

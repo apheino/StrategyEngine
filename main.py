@@ -107,6 +107,11 @@ def handle_events():
                 scenario.show_combat_messages = not scenario.show_combat_messages
                 status = "ON" if scenario.show_combat_messages else "OFF"
                 print(f"Damage numbers display: {status}")
+            elif event.key == pygame.K_s:
+                # S key - toggle fog of war
+                scenario.fog_of_war_enabled = not scenario.fog_of_war_enabled
+                status = "ON" if scenario.fog_of_war_enabled else "OFF"
+                print(f"Fog of war: {status}")
         
         # Pass ALL events to grid for pan/zoom tracking
         # Grid needs to track mouse down/move/up for drag detection
@@ -188,6 +193,9 @@ def draw(fps):
     # Draw terrain tiles
     scenario.draw_map(screen)
     
+    # Draw fog of war overlay on unseen cells
+    scenario.draw_fog_of_war(screen)
+    
     # Draw selection highlights (green for valid moves, red for valid attacks)
     scenario.draw_selection_highlights(screen)
     
@@ -221,6 +229,7 @@ def draw(fps):
         "Hover for unit info",
         "SPACE: End turn",
         "H: Toggle damage #s",
+        "S: Toggle fog of war",
         "G: Toggle grid"
     ]
     for i, text in enumerate(instructions):

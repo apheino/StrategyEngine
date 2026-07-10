@@ -199,7 +199,8 @@ class Unit:
             'projectile_count': 1,  # Number of projectiles fired per attack (1 = single shot, 2+ = volley/battery)
             'hit_chance': 0.90,  # Probability of hitting (0.0 to 1.0, default 90%)
             'damage_std': 2.0,  # Standard deviation for damage variance (Gaussian distribution)
-            'fire_type': 'direct'  # 'direct' = needs line of sight, 'indirect' = can fire over obstacles
+            'fire_type': 'direct',  # 'direct' = needs line of sight, 'indirect' = can fire over obstacles
+            'vision_range': 5  # How far the unit can see (in grid cells)
         }
         
         attributes = default_attributes.copy()
@@ -232,6 +233,7 @@ class Unit:
         self.hit_chance = max(0.0, min(1.0, attributes['hit_chance']))  # Clamp between 0.0 and 1.0
         self.damage_std = max(0.0, attributes['damage_std'])  # Standard deviation for damage variance
         self.fire_type = attributes['fire_type']  # 'direct' or 'indirect'
+        self.vision_range = max(1, attributes['vision_range'])  # How far the unit can see (minimum 1)
     
     def load_animations(self):
         """
