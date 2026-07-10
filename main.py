@@ -226,6 +226,40 @@ def start_scenario(scenario_number, campaign_mode=False):
 # MENU RENDERING
 # ============================================================================
 
+def get_menu_button_at_mouse(mouse_pos, buttons, button_start_y=200, button_spacing=60):
+    """
+    Get the index of the menu button at the mouse position
+    
+    Args:
+        mouse_pos (tuple): (x, y) mouse position
+        buttons (list): List of button dicts
+        button_start_y (int): Y position of first button
+        button_spacing (int): Vertical spacing between buttons
+        
+    Returns:
+        int: Button index or -1 if no button at position
+    """
+    mouse_x, mouse_y = mouse_pos
+    
+    for i, button in enumerate(buttons):
+        button_y = button_start_y + i * button_spacing
+        # Create a rough hit box around the button text
+        # Approximate button height and width
+        button_height = 40
+        button_width = len(button['text']) * 20  # Rough estimate
+        
+        button_left = SCREEN_WIDTH // 2 - button_width // 2
+        button_right = SCREEN_WIDTH // 2 + button_width // 2
+        button_top = button_y - button_height // 2
+        button_bottom = button_y + button_height // 2
+        
+        if (button_left <= mouse_x <= button_right and 
+            button_top <= mouse_y <= button_bottom):
+            return i
+    
+    return -1
+
+
 def draw_menu(title, buttons, selected_index):
     """
     Draw a menu screen with title and buttons
@@ -242,13 +276,18 @@ def draw_menu(title, buttons, selected_index):
     title_rect = title_surf.get_rect(center=(SCREEN_WIDTH // 2, 100))
     screen.blit(title_surf, title_rect)
     
+    # Get mouse position for hover detection
+    mouse_pos = pygame.mouse.get_pos()
+    hovered_index = get_menu_button_at_mouse(mouse_pos, buttons)
+    
     # Draw buttons
     button_start_y = 200
     button_spacing = 60
     
     for i, button in enumerate(buttons):
-        if i == selected_index:
-            color = (255, 255, 100)  # Yellow for selected
+        # Highlight if selected by keyboard or hovered by mouse
+        if i == selected_index or i == hovered_index:
+            color = (255, 255, 100)  # Yellow for selected/hovered
             text = f"> {button['text']} <"
         else:
             color = WHITE
@@ -259,7 +298,7 @@ def draw_menu(title, buttons, selected_index):
         screen.blit(button_surf, button_rect)
     
     # Draw controls hint
-    hint = "Use UP/DOWN arrows to navigate, ENTER to select, ESC to quit"
+    hint = "Arrow keys or mouse to navigate, ENTER or click to select, ESC to quit"
     hint_surf = small_font.render(hint, True, LIGHT_GRAY)
     hint_rect = hint_surf.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50))
     screen.blit(hint_surf, hint_rect)
@@ -301,7 +340,7 @@ def draw_story_screen():
 
 
 def draw_victory_screen():
-    """Draw victory screen"""
+    """Draw victory screen with mouse support"""
     screen.fill((20, 50, 20))  # Dark green background
     
     # Draw title
@@ -326,10 +365,15 @@ def draw_victory_screen():
             screen.blit(text_surf, text_rect)
             y_offset += 30
     
+    # Get mouse position for hover detection
+    mouse_pos = pygame.mouse.get_pos()
+    hovered_index = get_menu_button_at_mouse(mouse_pos, menu_buttons, button_start_y=380, button_spacing=50)
+    
     # Draw menu
     y_offset = 380
     for i, button in enumerate(menu_buttons):
-        if i == selected_menu_item:
+        # Highlight if selected by keyboard or hovered by mouse
+        if i == selected_menu_item or i == hovered_index:
             color = (255, 255, 100)
             text = f"> {button['text']} <"
         else:
@@ -342,7 +386,7 @@ def draw_victory_screen():
 
 
 def draw_defeat_screen():
-    """Draw defeat screen"""
+    """Draw defeat screen with mouse support"""
     screen.fill((50, 20, 20))  # Dark red background
     
     # Draw title
@@ -367,10 +411,15 @@ def draw_defeat_screen():
             screen.blit(text_surf, text_rect)
             y_offset += 30
     
+    # Get mouse position for hover detection
+    mouse_pos = pygame.mouse.get_pos()
+    hovered_index = get_menu_button_at_mouse(mouse_pos, menu_buttons, button_start_y=380, button_spacing=50)
+    
     # Draw menu
     y_offset = 380
     for i, button in enumerate(menu_buttons):
-        if i == selected_menu_item:
+        # Highlight if selected by keyboard or hovered by mouse
+        if i == selected_menu_item or i == hovered_index:
             color = (255, 255, 100)
             text = f"> {button['text']} <"
         else:
@@ -388,7 +437,7 @@ def draw_defeat_screen():
 
 def handle_menu_events(event):
     """
-    Handle events for menu screens
+    Handle events for menu screens (keyboard and mouse)
     
     Args:
         event: Pygame event
@@ -407,32 +456,71 @@ def handle_menu_events(event):
             selected_menu_item = (selected_menu_item + 1) % len(menu_buttons)
         elif event.key == pygame.K_RETURN:
             # Execute selected action
-            action = menu_buttons[selected_menu_item]['action']
-            
-            if action == "campaign":
-                start_scenario(1, campaign_mode=True)
-            elif action == "skirmish":
-                init_scenario_select_menu()
-                current_state = GameState.SCENARIO_SELECT
-            elif action == "scenario_1":
-                start_scenario(1, campaign_mode=False)
-            elif action == "scenario_2":
-                start_scenario(2, campaign_mode=False)
-            elif action == "scenario_3":
-                start_scenario(3, campaign_mode=False)
-            elif action == "main_menu":
-                init_main_menu()
-                current_state = GameState.MAIN_MENU
-            elif action == "next_scenario":
-                next_num = current_story.get('next_scenario')
-                if next_num:
-                    start_scenario(next_num, campaign_mode=True)
-            elif action == "replay":
-                start_scenario(current_scenario_number, campaign_mode=is_campaign_mode)
-            elif action == "quit":
-                return False
+            execute_menu_action(selected_menu_item)
+    
+    elif event.type == pygame.MOUSEMOTION:
+        # Update selected item based on mouse hover
+        # Use different button positions for victory/defeat screens
+        mouse_pos = pygame.mouse.get_pos()
+        if current_state in [GameState.VICTORY, GameState.DEFEAT]:
+            hovered_index = get_menu_button_at_mouse(mouse_pos, menu_buttons, button_start_y=380, button_spacing=50)
+        else:
+            hovered_index = get_menu_button_at_mouse(mouse_pos, menu_buttons)
+        if hovered_index >= 0:
+            selected_menu_item = hovered_index
+    
+    elif event.type == pygame.MOUSEBUTTONDOWN:
+        if event.button == 1:  # Left click
+            mouse_pos = event.pos
+            # Use different button positions for victory/defeat screens
+            if current_state in [GameState.VICTORY, GameState.DEFEAT]:
+                clicked_index = get_menu_button_at_mouse(mouse_pos, menu_buttons, button_start_y=380, button_spacing=50)
+            else:
+                clicked_index = get_menu_button_at_mouse(mouse_pos, menu_buttons)
+            if clicked_index >= 0:
+                selected_menu_item = clicked_index
+                execute_menu_action(clicked_index)
     
     return True
+
+
+def execute_menu_action(button_index):
+    """
+    Execute the action for a menu button
+    
+    Args:
+        button_index (int): Index of the button to execute
+    """
+    global current_state, current_scenario_number
+    
+    if button_index < 0 or button_index >= len(menu_buttons):
+        return
+    
+    action = menu_buttons[button_index]['action']
+    
+    if action == "campaign":
+        start_scenario(1, campaign_mode=True)
+    elif action == "skirmish":
+        init_scenario_select_menu()
+        current_state = GameState.SCENARIO_SELECT
+    elif action == "scenario_1":
+        start_scenario(1, campaign_mode=False)
+    elif action == "scenario_2":
+        start_scenario(2, campaign_mode=False)
+    elif action == "scenario_3":
+        start_scenario(3, campaign_mode=False)
+    elif action == "main_menu":
+        init_main_menu()
+        current_state = GameState.MAIN_MENU
+    elif action == "next_scenario":
+        next_num = current_story.get('next_scenario')
+        if next_num:
+            start_scenario(next_num, campaign_mode=True)
+    elif action == "replay":
+        start_scenario(current_scenario_number, campaign_mode=is_campaign_mode)
+    elif action == "quit":
+        pygame.quit()
+        sys.exit()
 
 
 def handle_story_events(event):
