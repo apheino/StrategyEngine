@@ -294,15 +294,35 @@ class Scenario:
         for unit in self.units:
             unit.update(dt)
         
-        # Check if any player units finished moving - recalculate fog if so
+        # Check if any player units finished moving
         player_finished_moving = False
+        unit_finished_moving = None
         for unit in player_units_moving:
             if not unit.is_moving:
                 player_finished_moving = True
+                unit_finished_moving = unit
                 break
         
         if player_finished_moving:
+            # Recalculate fog of war
             self.calculate_visible_cells()
+            
+            # Handle mobility deduction for the unit that finished moving
+            if unit_finished_moving and hasattr(unit_finished_moving, 'pending_mobility_cost'):
+                mobility_cost = unit_finished_moving.pending_mobility_cost
+                unit_finished_moving.mobility -= mobility_cost
+                unit_finished_moving.pending_mobility_cost = 0
+                
+                # Check if unit still has mobility remaining
+                if unit_finished_moving.mobility <= 0:
+                    unit_finished_moving.is_active = False
+                    print(f"{unit_finished_moving.unit_type} has no mobility remaining")
+                else:
+                    # Unit still has mobility - keep it selected and recalculate moves
+                    print(f"{unit_finished_moving.unit_type} has {unit_finished_moving.mobility} mobility remaining")
+                    self.selected_unit = unit_finished_moving
+                    self.valid_moves = self.calculate_valid_moves(unit_finished_moving)
+                    self.valid_attacks = self.calculate_valid_attacks(unit_finished_moving)
         
         # Update projectiles
         for projectile in self.projectiles[:]:  # Copy list to avoid modification during iteration
@@ -1140,7 +1160,7 @@ class Scenario:
         Attempt to move the selected unit to a destination
         
         Validates that destination is in the valid_moves list, then executes movement.
-        Unit becomes inactive after moving (can't move or attack again this turn).
+        Deducts mobility based on distance moved. Unit remains active if mobility > 0.
         
         Args:
             row (int): Destination grid row
@@ -1156,14 +1176,23 @@ class Scenario:
         if (row, col) in self.valid_moves:
             # Move the unit along the calculated path
             path = self.movement_paths.get((row, col))
+            
+            # Calculate mobility cost (path length - 1, since path includes starting position)
+            mobility_cost = len(path) - 1 if path else 1
+            
+            # Store the mobility cost to be deducted when animation completes
+            self.selected_unit.pending_mobility_cost = mobility_cost
+            
+            print(f"Moved {self.selected_unit.unit_type} to {row},{col} (cost: {mobility_cost}, remaining: {self.selected_unit.mobility - mobility_cost})")
+            
+            # Start the movement animation
             self.selected_unit.move_to((row, col), path=path)
-            self.selected_unit.is_active = False  # Unit has moved, cannot move again this turn
-            print(f"Moved {self.selected_unit.unit_type} to {row},{col}")
             
-            # Note: Fog of war will be recalculated automatically in update()
-            # when the movement animation completes
+            # Note: Mobility deduction and activation status will be updated in update()
+            # when the movement animation completes. If unit has mobility remaining,
+            # it will be reselected automatically.
             
-            # Deselect after moving
+            # Temporarily deselect during movement animation
             self.deselect_unit()
             return True
         

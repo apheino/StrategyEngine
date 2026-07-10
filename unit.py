@@ -109,6 +109,7 @@ class Unit:
         self.movement_progress = 0.0                # 0.0 to 1.0 (interpolation)
         self.movement_path = [position]             # List of waypoints for pathfinding
         self.movement_waypoint_index = 0            # Current waypoint being moved toward
+        self.pending_mobility_cost = 0              # Mobility to deduct when movement completes
         
         # ========================================
         # COMBAT ANIMATION STATE
