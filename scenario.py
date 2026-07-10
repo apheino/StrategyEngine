@@ -284,8 +284,25 @@ class Scenario:
         Args:
             dt (float): Delta time in seconds since last frame
         """
+        # Track which player units are moving before update
+        player_units_moving = set()
+        for unit in self.units:
+            if unit.team == 0 and unit.is_moving:
+                player_units_moving.add(unit)
+        
+        # Update all units
         for unit in self.units:
             unit.update(dt)
+        
+        # Check if any player units finished moving - recalculate fog if so
+        player_finished_moving = False
+        for unit in player_units_moving:
+            if not unit.is_moving:
+                player_finished_moving = True
+                break
+        
+        if player_finished_moving:
+            self.calculate_visible_cells()
         
         # Update projectiles
         for projectile in self.projectiles[:]:  # Copy list to avoid modification during iteration
@@ -1143,8 +1160,8 @@ class Scenario:
             self.selected_unit.is_active = False  # Unit has moved, cannot move again this turn
             print(f"Moved {self.selected_unit.unit_type} to {row},{col}")
             
-            # Update visible cells after player unit moves
-            self.calculate_visible_cells()
+            # Note: Fog of war will be recalculated automatically in update()
+            # when the movement animation completes
             
             # Deselect after moving
             self.deselect_unit()
