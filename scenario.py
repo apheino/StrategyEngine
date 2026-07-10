@@ -345,6 +345,20 @@ class Scenario:
         if not self.fog_of_war_enabled:
             return  # Fog of war is disabled, don't draw anything
         
+        # Get screen dimensions
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        
+        # Calculate grid dimensions (same logic as draw_units)
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = self.grid.cell_size * self.grid.zoom
+        scaled_grid_width = grid_world_width * self.grid.zoom
+        scaled_grid_height = grid_world_height * self.grid.zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
+        
         # Create semi-transparent overlay surface
         fog_color = (0, 0, 0, int(255 * 0.75))  # Black with 75% opacity
         
@@ -355,11 +369,12 @@ class Scenario:
                 if (row, col) in self.visible_cells:
                     continue
                 
-                # Calculate screen position for this cell
-                x, y = self.grid.grid_to_screen(row, col)
+                # Calculate screen position for this cell (same as draw_units)
+                x = center_x + col * scaled_cell_size
+                y = center_y + row * scaled_cell_size
                 
                 # Create fog surface for this cell
-                fog_surface = pygame.Surface((self.grid.cell_size, self.grid.cell_size), pygame.SRCALPHA)
+                fog_surface = pygame.Surface((scaled_cell_size, scaled_cell_size), pygame.SRCALPHA)
                 fog_surface.fill(fog_color)
                 
                 # Draw fog overlay
