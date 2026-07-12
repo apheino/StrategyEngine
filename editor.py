@@ -847,6 +847,8 @@ class ScenarioEditor:
     
     def change_grid_size(self, dw, dh):
         """Change the grid dimensions"""
+        new_width = max(5, min(50, self.map_width + dw))
+        new_height = max(5, min(50, self.map_height + dh))
         
         # Create new map data
         new_map = [[0 for _ in range(new_width)] for _ in range(new_height)]
