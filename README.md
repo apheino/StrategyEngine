@@ -98,6 +98,24 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
 ### Available Scenarios
 - **Scenario 1: The First Battle** - 10x10 small map, 12 units, tutorial-friendly
 - **Scenario 2: The Narrow Valley** - 8x15 rectangular map, 13 units, variety testing
+
+## Scenario Editor
+
+A graphical tool for creating and editing maps and scenarios!
+
+```bash
+python editor.py
+```
+
+**Features:**
+- 🎨 Visual map painting with terrain types
+- 🎮 Unit placement with team assignment
+- 💾 Save/load scenarios to game format
+- 🖱️ Mouse-based interface with keyboard shortcuts
+- 📏 Adjustable grid sizes (5×5 to 50×50)
+- 🎯 Real-time preview of maps and units
+
+See **[docs/EDITOR.md](docs/EDITOR.md)** for complete editor documentation.
 - **Scenario 3: The Great Plains Battle** - 200x100 large battle map, 39 units, varied terrain
 
 In Campaign mode, scenarios are played in order with story context.
