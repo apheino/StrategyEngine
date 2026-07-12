@@ -9,7 +9,8 @@ A graphical tool for creating and editing maps, unit placements, and scenarios f
 - **Visual Map Editor**: Paint terrain tiles with mouse clicks
 - **Unit Placement**: Place and configure units with team assignment
 - **Unit Type Creator**: Create new unit types directly in the editor
-- **Dynamic Unit Loading**: Automatically loads all unit types from resources/units/
+- **Terrain Type Creator**: Create custom terrain types with icons and passability
+- **Dynamic Loading**: Automatically loads all unit and terrain types
 - **Terrain Mobility Display**: Shows passability info (Easy/Slow/Blocked) for each terrain
 - **Scenario Management**: Save and load complete scenarios
 - **Intuitive UI**: Three-panel interface with toolbar and status bar
@@ -119,25 +120,141 @@ The editor uses `scenario_number` to determine which files to save/load:
 
 ## Terrain Types
 
+The editor automatically loads terrain types from `resources/terrains.json`.
+
+### Built-in Terrains
+
 Each terrain type displays its mobility characteristics in the editor.
 
-| # | Name | Color | Mobility | Description |
-|---|------|-------|----------|-------------|
-| 0 | Grass | Green | **Easy** | Standard terrain, no movement penalty |
-| 1 | Water | Blue | **Blocked** | Impassable, units cannot enter |
-| 2 | Mountain | Brown | **Blocked** | Impassable, blocks line of sight |
-| 3 | Forest | Dark Green | **Slow** | Slows movement, reduces visibility |
-| 4 | Sand | Tan | **Easy** | Desert terrain, no penalty |
-| 5 | Road | Gray | **Easy** | Built paths, could have bonus |
+| # | Name | Color | Mobility | Icon | Description |
+|---|------|-------|----------|------|-------------|
+| 0 | Grass | Green | **Easy** | grass | Standard terrain, no movement penalty |
+| 1 | Water | Blue | **Blocked** | water | Impassable, units cannot enter |
+| 2 | Mountain | Brown | **Blocked** | mountain | Impassable, blocks line of sight |
+| 3 | Forest | Dark Green | **Slow** | forest | Slows movement, reduces visibility |
+| 4 | Sand | Tan | **Easy** | sand | Desert terrain, no penalty |
+| 5 | Road | Gray | **Easy** | road | Built paths, could have bonus |
 
 **Mobility Labels:**
-- **Easy**: Normal movement cost
-- **Slow**: Increased movement cost (usually 2x)
-- **Blocked**: Cannot pass through
+- **Easy**: Normal movement cost (passability = 0)
+- **Slow**: Increased movement cost, usually 2x (passability = 1)
+- **Blocked**: Cannot pass through (passability = 2)
 
-**Note**: Terrain types are stored by passability in the map file:
+### Creating Custom Terrain Types
+
+You can create custom terrain types directly in the editor! This allows you to have multiple terrain types with the same passability level but different visuals.
+
+**Steps to create terrain:**
+
+1. Press `T` to enter Terrain mode (if not already)
+2. Click the **"+ Create New Terrain"** button (green button below terrain list)
+3. Fill out the terrain definition form:
+   - **Name**: Terrain type name (e.g., "lava", "ice", "bridge")
+   - **Mobility**: Click Easy/Slow/Block to set passability
+   - **Color R/G/B**: RGB color values (0-255 each)
+   - **Icon**: Icon identifier (for future sprite support)
+4. Click **"Save Terrain"** or press Enter through all fields
+5. The new terrain type is immediately available for painting!
+
+**Form Interface:**
+
+```
+┌────────────────────────────────┐
+│ Create Terrain                 │
+├────────────────────────────────┤
+│ Name:     [Lava__________]     │
+│ Mobility: [Easy] [Slow] [Block]│
+│ Color R:  [255__________]      │
+│ Color G:  [100__________]      │
+│ Color B:  [0____________]      │
+│ Preview:  [████████████]       │  ← Live color preview
+│ Icon:     [lava_________]      │
+├────────────────────────────────┤
+│ [Save Terrain]  [Cancel]       │
+└────────────────────────────────┘
+```
+
+**Keyboard Controls:**
+- **Tab** or **Enter**: Next field
+- **Backspace**: Delete character
+- **ESC**: Cancel creation
+- **Click**: Activate specific field or select passability
+
+**Color Preview:**
+The form shows a live preview of your terrain color as you type RGB values. This helps you visualize how the terrain will look on the map.
+
+**Example Custom Terrains:**
+
+1. **Lava** (Blocked like water, but red):
+   - Name: "lava"
+   - Mobility: Block
+   - Color: RGB(255, 100, 0) - bright orange/red
+   - Icon: "lava"
+   - Use: Volcanic areas, impassable hazard
+
+2. **Ice** (Slow like forest, but white/blue):
+   - Name: "ice"
+   - Mobility: Slow
+   - Color: RGB(200, 230, 255) - light blue
+   - Icon: "ice"
+   - Use: Frozen terrain that slows movement
+
+3. **Bridge** (Easy like grass, but gray):
+   - Name: "bridge"
+   - Mobility: Easy
+   - Color: RGB(180, 160, 140) - brown-gray
+   - Icon: "bridge"
+   - Use: Crossing over water or valleys
+
+4. **Swamp** (Slow, dark green):
+   - Name: "swamp"
+   - Mobility: Slow
+   - Color: RGB(60, 80, 40) - murky green
+   - Icon: "swamp"
+   - Use: Wetlands that hinder movement
+
+5. **Cliff** (Blocked, light brown):
+   - Name: "cliff"
+   - Mobility: Block
+   - Color: RGB(160, 130, 100) - tan/brown
+   - Icon: "cliff"
+   - Use: Different visual from mountains
+
+**Multiple Terrains, Same Passability:**
+
+The key feature is that you can create multiple terrain types with the same passability. For example:
+- **Water** (Blocked) - blue impassable liquid
+- **Lava** (Blocked) - red impassable liquid
+- **Chasm** (Blocked) - dark impassable pit
+
+All three are impassable (passability = 2), but visually distinct with different colors and icons.
+
+**Terrain File:**
+
+Terrain definitions are saved to `resources/terrains.json`:
+
+```json
+{
+  "0": {
+    "name": "Grass",
+    "color": [34, 139, 34],
+    "passability": 0,
+    "icon": "grass"
+  },
+  "6": {
+    "name": "Lava",
+    "color": [255, 100, 0],
+    "passability": 2,
+    "icon": "lava"
+  }
+}
+```
+
+Each terrain gets a unique ID (automatically assigned). The color is stored as RGB values, and the icon field is for future sprite support.
+
+**Note**: Map files store passability values, not terrain IDs:
 - `0` = Easy passable
-- `1` = Slow passable
+- `1` = Slow passable  
 - `2` = Blocked
 
 ## Unit Types

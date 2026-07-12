@@ -49,15 +49,57 @@ TOOLBAR_HEIGHT = 60
 PANEL_WIDTH = 250
 STATUS_HEIGHT = 30
 
-# Terrain types (matching grid.py)
-TERRAIN_TYPES = {
-    0: {"name": "Grass", "color": (34, 139, 34), "passability": 0},    # Easy
-    1: {"name": "Water", "color": (0, 105, 148), "passability": 2},     # Blocked
-    2: {"name": "Mountain", "color": (139, 90, 43), "passability": 2},  # Blocked
-    3: {"name": "Forest", "color": (0, 100, 0), "passability": 1},      # Slow
-    4: {"name": "Sand", "color": (238, 214, 175), "passability": 0},    # Easy
-    5: {"name": "Road", "color": (169, 169, 169), "passability": 0},    # Easy
-}
+# Terrain types - dynamically loaded from resources/terrains.json
+def load_terrain_types():
+    """Load terrain types from JSON file or use defaults"""
+    terrain_file = Path("resources/terrains.json")
+    
+    default_terrains = {
+        0: {"name": "Grass", "color": (34, 139, 34), "passability": 0, "icon": "grass"},
+        1: {"name": "Water", "color": (0, 105, 148), "passability": 2, "icon": "water"},
+        2: {"name": "Mountain", "color": (139, 90, 43), "passability": 2, "icon": "mountain"},
+        3: {"name": "Forest", "color": (0, 100, 0), "passability": 1, "icon": "forest"},
+        4: {"name": "Sand", "color": (238, 214, 175), "passability": 0, "icon": "sand"},
+        5: {"name": "Road", "color": (169, 169, 169), "passability": 0, "icon": "road"},
+    }
+    
+    if not terrain_file.exists():
+        # Create default terrain file
+        terrain_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(terrain_file, 'w') as f:
+            json.dump(default_terrains, f, indent=2)
+        return default_terrains
+    
+    try:
+        with open(terrain_file, 'r') as f:
+            terrains = json.load(f)
+            # Convert string keys to integers and ensure color is tuple
+            result = {}
+            for key, value in terrains.items():
+                terrain_id = int(key)
+                value['color'] = tuple(value['color']) if isinstance(value['color'], list) else value['color']
+                result[terrain_id] = value
+            return result
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error loading terrains.json: {e}")
+        return default_terrains
+
+def save_terrain_types(terrains):
+    """Save terrain types to JSON file"""
+    terrain_file = Path("resources/terrains.json")
+    terrain_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Convert to serializable format
+    serializable = {}
+    for key, value in terrains.items():
+        terrain_data = value.copy()
+        terrain_data['color'] = list(terrain_data['color'])  # Convert tuple to list for JSON
+        serializable[str(key)] = terrain_data
+    
+    with open(terrain_file, 'w') as f:
+        json.dump(serializable, f, indent=2)
+
+TERRAIN_TYPES = load_terrain_types()
 
 # Unit types - dynamically loaded from resources/units/
 def get_available_unit_types():
@@ -77,6 +119,7 @@ UNIT_TYPES = get_available_unit_types()
 MODE_TERRAIN = "terrain"
 MODE_UNITS = "units"
 MODE_CREATE_UNIT = "create_unit"
+MODE_CREATE_TERRAIN = "create_terrain"
 
 # Passability labels
 PASSABILITY_LABELS = {
@@ -120,6 +163,11 @@ class ScenarioEditor:
         self.unit_form_data = {}
         self.active_input_field = None
         self.input_text = ""
+        
+        # Terrain creator state
+        self.creating_terrain = False
+        self.terrain_form_data = {}
+        self.color_component = 0  # 0=R, 1=G, 2=B
         
         # Map data
         self.map_width = 15
@@ -176,8 +224,10 @@ class ScenarioEditor:
             elif event.type == pygame.KEYDOWN:
                 # Check if unit creator handles this event
                 if not self.handle_unit_creator_input(event):
-                    # If not, handle normal keypresses
-                    self.handle_keypress(event.key)
+                    # Check if terrain creator handles this event
+                    if not self.handle_terrain_creator_input(event):
+                        # If not, handle normal keypresses
+                        self.handle_keypress(event.key)
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.handle_mouse_click(event.button, event.pos)
@@ -195,8 +245,10 @@ class ScenarioEditor:
             self.running = False
         elif key == pygame.K_t:
             self.mode = MODE_TERRAIN
+            self.creating_terrain = False
         elif key == pygame.K_u:
             self.mode = MODE_UNITS
+            self.creating_unit = False
         elif key == pygame.K_s:
             self.save_scenario()
         elif key == pygame.K_l:
@@ -248,13 +300,23 @@ class ScenarioEditor:
     def handle_panel_click(self, x, y):
         """Handle clicks in the left panel"""
         if self.mode == MODE_TERRAIN:
-            # Terrain selection area
-            start_y = TOOLBAR_HEIGHT + 40
-            for i, (terrain_id, terrain_info) in enumerate(TERRAIN_TYPES.items()):
-                btn_y = start_y + i * 40
-                if btn_y <= y < btn_y + 35:
-                    self.selected_terrain = terrain_id
-                    break
+            if self.creating_terrain:
+                # Handle clicks in terrain creator form
+                self.handle_terrain_creator_click(x, y)
+            else:
+                # Terrain selection area
+                start_y = TOOLBAR_HEIGHT + 40
+                for i, (terrain_id, terrain_info) in enumerate(TERRAIN_TYPES.items()):
+                    btn_y = start_y + i * 40
+                    if btn_y <= y < btn_y + 35:
+                        self.selected_terrain = terrain_id
+                        break
+                
+                # Create New Terrain button
+                create_btn_y = start_y + len(TERRAIN_TYPES) * 40 + 10
+                if create_btn_y <= y < create_btn_y + 40:
+                    self.start_terrain_creator()
+                    return
         
         elif self.mode == MODE_UNITS:
             if self.creating_unit:
@@ -514,10 +576,277 @@ class ScenarioEditor:
         self.active_input_field = None
         self.input_text = ""
     
+    def start_terrain_creator(self):
+        """Start the terrain creation process"""
+        self.creating_terrain = True
+        self.terrain_form_data = {
+            "name": "",
+            "passability": "0",
+            "color_r": "100",
+            "color_g": "200",
+            "color_b": "100",
+            "icon": "custom"
+        }
+        self.active_input_field = "name"
+        self.color_component = 0
+        print("Terrain creator started. Enter terrain details.")
+    
+    def draw_terrain_creator(self, y_start):
+        """Draw the terrain creator form"""
+        y_offset = y_start
+        
+        # Title
+        title = self.font.render("Create Terrain", True, BLACK)
+        self.screen.blit(title, (10, y_offset))
+        y_offset += 35
+        
+        # Name field
+        label_surf = self.small_font.render("Name:", True, BLACK)
+        self.screen.blit(label_surf, (15, y_offset))
+        input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+        is_active = (self.active_input_field == "name")
+        color = YELLOW if is_active else WHITE
+        pygame.draw.rect(self.screen, color, input_rect)
+        pygame.draw.rect(self.screen, BLACK, input_rect, 1)
+        value = self.input_text if is_active else self.terrain_form_data.get("name", "")
+        value_surf = self.small_font.render(str(value), True, BLACK)
+        self.screen.blit(value_surf, (123, y_offset))
+        y_offset += 25
+        
+        # Passability selector
+        label_surf = self.small_font.render("Mobility:", True, BLACK)
+        self.screen.blit(label_surf, (15, y_offset))
+        
+        # Passability buttons
+        btn_y = y_offset - 2
+        for pass_val, pass_label in [(0, "Easy"), (1, "Slow"), (2, "Block")]:
+            btn_x = 90 + pass_val * 50
+            btn_rect = pygame.Rect(btn_x, btn_y, 45, 20)
+            current_pass = int(self.terrain_form_data.get("passability", "0"))
+            btn_color = YELLOW if current_pass == pass_val else WHITE
+            pygame.draw.rect(self.screen, btn_color, btn_rect)
+            pygame.draw.rect(self.screen, BLACK, btn_rect, 1)
+            text_surf = self.small_font.render(pass_label, True, BLACK)
+            text_rect = text_surf.get_rect(center=btn_rect.center)
+            self.screen.blit(text_surf, text_rect)
+        y_offset += 25
+        
+        # Color fields (RGB)
+        color_fields = [("R", "color_r"), ("G", "color_g"), ("B", "color_b")]
+        for i, (label, field_key) in enumerate(color_fields):
+            label_surf = self.small_font.render(f"Color {label}:", True, BLACK)
+            self.screen.blit(label_surf, (15, y_offset))
+            
+            input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+            is_active = (self.active_input_field == field_key)
+            color = YELLOW if is_active else WHITE
+            pygame.draw.rect(self.screen, color, input_rect)
+            pygame.draw.rect(self.screen, BLACK, input_rect, 1)
+            
+            value = self.input_text if is_active else self.terrain_form_data.get(field_key, "0")
+            value_surf = self.small_font.render(str(value), True, BLACK)
+            self.screen.blit(value_surf, (123, y_offset))
+            y_offset += 25
+        
+        # Color preview
+        y_offset += 5
+        try:
+            r = int(self.terrain_form_data.get("color_r", "100"))
+            g = int(self.terrain_form_data.get("color_g", "200"))
+            b = int(self.terrain_form_data.get("color_b", "100"))
+            r = max(0, min(255, r))
+            g = max(0, min(255, g))
+            b = max(0, min(255, b))
+            preview_color = (r, g, b)
+        except ValueError:
+            preview_color = (100, 200, 100)
+        
+        label_surf = self.small_font.render("Preview:", True, BLACK)
+        self.screen.blit(label_surf, (15, y_offset))
+        preview_rect = pygame.Rect(90, y_offset - 2, 140, 30)
+        pygame.draw.rect(self.screen, preview_color, preview_rect)
+        pygame.draw.rect(self.screen, BLACK, preview_rect, 2)
+        y_offset += 40
+        
+        # Icon field
+        label_surf = self.small_font.render("Icon:", True, BLACK)
+        self.screen.blit(label_surf, (15, y_offset))
+        input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+        is_active = (self.active_input_field == "icon")
+        color = YELLOW if is_active else WHITE
+        pygame.draw.rect(self.screen, color, input_rect)
+        pygame.draw.rect(self.screen, BLACK, input_rect, 1)
+        value = self.input_text if is_active else self.terrain_form_data.get("icon", "")
+        value_surf = self.small_font.render(str(value), True, BLACK)
+        self.screen.blit(value_surf, (123, y_offset))
+        y_offset += 30
+        
+        # Save and Cancel buttons
+        save_btn = pygame.Rect(10, y_offset, 110, 30)
+        pygame.draw.rect(self.screen, GREEN, save_btn)
+        pygame.draw.rect(self.screen, BLACK, save_btn, 2)
+        save_text = self.small_font.render("Save Terrain", True, BLACK)
+        self.screen.blit(save_text, (17, y_offset + 7))
+        
+        cancel_btn = pygame.Rect(130, y_offset, 110, 30)
+        pygame.draw.rect(self.screen, RED, cancel_btn)
+        pygame.draw.rect(self.screen, BLACK, cancel_btn, 2)
+        cancel_text = self.small_font.render("Cancel", True, BLACK)
+        self.screen.blit(cancel_text, (155, y_offset + 7))
+    
+    def handle_terrain_creator_click(self, x, y):
+        """Handle clicks in terrain creator form"""
+        y_offset = TOOLBAR_HEIGHT + 45
+        
+        # Name field
+        input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+        if input_rect.collidepoint(x, y):
+            self.active_input_field = "name"
+            self.input_text = str(self.terrain_form_data.get("name", ""))
+            return
+        y_offset += 25
+        
+        # Passability buttons
+        for pass_val in [0, 1, 2]:
+            btn_x = 90 + pass_val * 50
+            btn_rect = pygame.Rect(btn_x, y_offset - 2, 45, 20)
+            if btn_rect.collidepoint(x, y):
+                self.terrain_form_data["passability"] = str(pass_val)
+                return
+        y_offset += 25
+        
+        # Color fields
+        for field_key in ["color_r", "color_g", "color_b"]:
+            input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+            if input_rect.collidepoint(x, y):
+                self.active_input_field = field_key
+                self.input_text = str(self.terrain_form_data.get(field_key, "0"))
+                return
+            y_offset += 25
+        
+        y_offset += 45  # Skip preview
+        
+        # Icon field
+        input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+        if input_rect.collidepoint(x, y):
+            self.active_input_field = "icon"
+            self.input_text = str(self.terrain_form_data.get("icon", ""))
+            return
+        y_offset += 30
+        
+        # Save button
+        save_btn = pygame.Rect(10, y_offset, 110, 30)
+        if save_btn.collidepoint(x, y):
+            self.save_terrain_definition()
+            return
+        
+        # Cancel button
+        cancel_btn = pygame.Rect(130, y_offset, 110, 30)
+        if cancel_btn.collidepoint(x, y):
+            self.creating_terrain = False
+            self.active_input_field = None
+            self.input_text = ""
+            print("Terrain creation cancelled")
+    
+    def handle_terrain_creator_input(self, event):
+        """Handle text input for terrain creator"""
+        if not self.creating_terrain or not self.active_input_field:
+            return False
+        
+        if event.key == pygame.K_RETURN or event.key == pygame.K_TAB:
+            # Save current field and move to next
+            self.terrain_form_data[self.active_input_field] = self.input_text
+            
+            # Move to next field
+            fields = ["name", "color_r", "color_g", "color_b", "icon"]
+            try:
+                current_idx = fields.index(self.active_input_field)
+                if current_idx < len(fields) - 1:
+                    self.active_input_field = fields[current_idx + 1]
+                    self.input_text = str(self.terrain_form_data.get(self.active_input_field, ""))
+                else:
+                    # Last field, save terrain
+                    self.save_terrain_definition()
+            except ValueError:
+                pass
+            return True
+        
+        elif event.key == pygame.K_BACKSPACE:
+            self.input_text = self.input_text[:-1]
+            return True
+        
+        elif event.key == pygame.K_ESCAPE:
+            self.creating_terrain = False
+            self.active_input_field = None
+            self.input_text = ""
+            return True
+        
+        elif event.unicode and event.unicode.isprintable():
+            # Limit color inputs to 3 digits
+            if self.active_input_field in ["color_r", "color_g", "color_b"]:
+                if len(self.input_text) < 3 and event.unicode.isdigit():
+                    self.input_text += event.unicode
+            else:
+                self.input_text += event.unicode
+            return True
+        
+        return False
+    
+    def save_terrain_definition(self):
+        """Save the new terrain definition"""
+        # Update form data with current input
+        if self.active_input_field:
+            self.terrain_form_data[self.active_input_field] = self.input_text
+        
+        terrain_name = self.terrain_form_data.get("name", "").strip()
+        if not terrain_name:
+            print("Error: Terrain name is required")
+            return
+        
+        # Build terrain definition
+        try:
+            r = int(self.terrain_form_data.get("color_r", "100"))
+            g = int(self.terrain_form_data.get("color_g", "200"))
+            b = int(self.terrain_form_data.get("color_b", "100"))
+            r = max(0, min(255, r))
+            g = max(0, min(255, g))
+            b = max(0, min(255, b))
+            
+            terrain_def = {
+                "name": terrain_name,
+                "color": (r, g, b),
+                "passability": int(self.terrain_form_data.get("passability", "0")),
+                "icon": self.terrain_form_data.get("icon", "custom")
+            }
+        except ValueError as e:
+            print(f"Error: Invalid terrain attribute values: {e}")
+            return
+        
+        # Find next available terrain ID
+        global TERRAIN_TYPES
+        next_id = max(TERRAIN_TYPES.keys()) + 1 if TERRAIN_TYPES else 0
+        
+        # Add to terrain types
+        TERRAIN_TYPES[next_id] = terrain_def
+        
+        # Save to file
+        save_terrain_types(TERRAIN_TYPES)
+        
+        print(f"Terrain '{terrain_name}' saved successfully!")
+        print(f"  ID: {next_id}")
+        print(f"  Color: RGB{terrain_def['color']}")
+        print(f"  Passability: {PASSABILITY_LABELS.get(terrain_def['passability'], 'Unknown')}")
+        
+        # Select the new terrain
+        self.selected_terrain = next_id
+        
+        # Exit creator mode
+        self.creating_terrain = False
+        self.active_input_field = None
+        self.input_text = ""
+    
     def change_grid_size(self, dw, dh):
         """Change the grid dimensions"""
-        new_width = max(5, min(50, self.map_width + dw))
-        new_height = max(5, min(50, self.map_height + dh))
         
         # Create new map data
         new_map = [[0 for _ in range(new_width)] for _ in range(new_height)]
@@ -690,35 +1019,48 @@ class ScenarioEditor:
         y_offset = TOOLBAR_HEIGHT + 10
         
         if self.mode == MODE_TERRAIN:
-            # Terrain selection
-            title = self.font.render("Terrain Types:", True, BLACK)
-            self.screen.blit(title, (10, y_offset))
-            y_offset += 30
-            
-            for terrain_id, terrain_info in TERRAIN_TYPES.items():
-                # Draw button
-                btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 35)
-                is_selected = (terrain_id == self.selected_terrain)
-                color = YELLOW if is_selected else WHITE
-                pygame.draw.rect(self.screen, color, btn_rect)
-                pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+            if self.creating_terrain:
+                # Show terrain creation form
+                self.draw_terrain_creator(y_offset)
+            else:
+                # Terrain selection
+                title = self.font.render("Terrain Types:", True, BLACK)
+                self.screen.blit(title, (10, y_offset))
+                y_offset += 30
                 
-                # Draw terrain color sample
-                color_rect = pygame.Rect(15, y_offset + 5, 25, 25)
-                pygame.draw.rect(self.screen, terrain_info["color"], color_rect)
-                pygame.draw.rect(self.screen, BLACK, color_rect, 1)
+                for terrain_id, terrain_info in TERRAIN_TYPES.items():
+                    # Draw button
+                    btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 35)
+                    is_selected = (terrain_id == self.selected_terrain)
+                    color = YELLOW if is_selected else WHITE
+                    pygame.draw.rect(self.screen, color, btn_rect)
+                    pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+                    
+                    # Draw terrain color sample
+                    color_rect = pygame.Rect(15, y_offset + 5, 25, 25)
+                    pygame.draw.rect(self.screen, terrain_info["color"], color_rect)
+                    pygame.draw.rect(self.screen, BLACK, color_rect, 1)
+                    
+                    # Draw terrain name
+                    name_surf = self.small_font.render(terrain_info["name"], True, BLACK)
+                    self.screen.blit(name_surf, (45, y_offset + 4))
+                    
+                    # Draw passability label
+                    passability = terrain_info["passability"]
+                    pass_label = PASSABILITY_LABELS.get(passability, "Unknown")
+                    pass_surf = self.small_font.render(f"({pass_label})", True, DARK_GRAY)
+                    self.screen.blit(pass_surf, (45, y_offset + 20))
+                    
+                    y_offset += 40
                 
-                # Draw terrain name
-                name_surf = self.small_font.render(terrain_info["name"], True, BLACK)
-                self.screen.blit(name_surf, (45, y_offset + 4))
-                
-                # Draw passability label
-                passability = terrain_info["passability"]
-                pass_label = PASSABILITY_LABELS.get(passability, "Unknown")
-                pass_surf = self.small_font.render(f"({pass_label})", True, DARK_GRAY)
-                self.screen.blit(pass_surf, (45, y_offset + 20))
-                
-                y_offset += 40
+                # Create New Terrain button
+                y_offset += 10
+                create_btn = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 40)
+                pygame.draw.rect(self.screen, GREEN, create_btn)
+                pygame.draw.rect(self.screen, BLACK, create_btn, 2)
+                create_text = self.small_font.render("+ Create New Terrain", True, BLACK)
+                text_rect = create_text.get_rect(center=create_btn.center)
+                self.screen.blit(create_text, text_rect)
         
         elif self.mode == MODE_UNITS:
             if self.creating_unit:

@@ -1,0 +1,62 @@
+{
+  "0": {
+    "name": "Grass",
+    "color": [
+      34,
+      139,
+      34
+    ],
+    "passability": 0,
+    "icon": "grass"
+  },
+  "1": {
+    "name": "Water",
+    "color": [
+      0,
+      105,
+      148
+    ],
+    "passability": 2,
+    "icon": "water"
+  },
+  "2": {
+    "name": "Mountain",
+    "color": [
+      139,
+      90,
+      43
+    ],
+    "passability": 2,
+    "icon": "mountain"
+  },
+  "3": {
+    "name": "Forest",
+    "color": [
+      0,
+      100,
+      0
+    ],
+    "passability": 1,
+    "icon": "forest"
+  },
+  "4": {
+    "name": "Sand",
+    "color": [
+      238,
+      214,
+      175
+    ],
+    "passability": 0,
+    "icon": "sand"
+  },
+  "5": {
+    "name": "Road",
+    "color": [
+      169,
+      169,
+      169
+    ],
+    "passability": 0,
+    "icon": "road"
+  }
+}
