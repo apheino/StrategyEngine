@@ -1492,39 +1492,51 @@ class Scenario:
             # Check if target is a structure
             is_structure = isinstance(target, Structure)
             
+            # Perform the attack (triggers animation and gets attack info)
+            # For structures, we'll modify the attack process slightly
             if is_structure:
-                # Attack structure directly (structures don't dodge)
-                import random
-                import numpy as np
+                # Set animation manually for structures (since unit.attack() expects Unit target)
+                self.selected_unit.is_attacking = True
+                self.selected_unit.set_attack_animation()
                 
-                # Calculate damage with Gaussian variation
-                base_damage = self.selected_unit.attack_power
-                damage_std = self.selected_unit.damage_std if hasattr(self.selected_unit, 'damage_std') else base_damage * 0.2
-                actual_damage = int(np.random.normal(base_damage, damage_std))
-                actual_damage = max(1, actual_damage)  # Minimum 1 damage
+                # Get attack parameters
+                is_ranged = self.selected_unit.projectile_speed > 0
+                base_damage = self.selected_unit.attack_power if is_ranged else self.selected_unit.get_effective_attack_power()
+                effective_projectile_count = self.selected_unit.get_effective_projectile_count()
                 
-                # Apply damage to structure
-                damage_dealt = target.take_damage(actual_damage)
+                attack_info = {
+                    'uses_projectile': is_ranged,
+                    'base_damage': base_damage,
+                    'damage': 0,
+                    'projectile_speed': self.selected_unit.projectile_speed,
+                    'sprite_name': self.selected_unit.get_projectile_sprite(),
+                    'projectile_count': effective_projectile_count,
+                    'hit_chance': 1.0,  # Structures don't dodge - always hit
+                    'damage_std': self.selected_unit.damage_std
+                }
                 
-                print(f"{self.selected_unit.unit_type} attacked {target.type} for {damage_dealt} damage (HP: {target.health}/{target.max_health})")
-                
-                # Check if destroyed
-                if not target.is_alive:
-                    print(f"{target.type} destroyed!")
-                
-                # No projectiles for structure attacks (instant hit)
-                # Mark unit as inactive after attacking
-                self.selected_unit.is_active = False
-                self.deselect_unit()
-                return True
-            
-            # Original unit attack code
-            # Perform the attack
-            attack_info = self.selected_unit.attack(target)
+                # For melee attacks on structures, apply damage immediately
+                if not is_ranged:
+                    actual_damage = self.selected_unit.calculate_variable_damage(base_damage)
+                    attack_info['damage'] = actual_damage
+                    attack_info['hit'] = True
+                    damage_dealt = target.take_damage(actual_damage)
+                    print(f"{self.selected_unit.unit_type} attacked {target.type} for {damage_dealt} damage (HP: {target.health}/{target.max_health})")
+                    
+                    if not target.is_alive:
+                        print(f"{target.type} destroyed!")
+            else:
+                # Original unit attack code
+                # Perform the attack
+                attack_info = self.selected_unit.attack(target)
             
             # Create projectile(s) for ranged attacks
             if attack_info['uses_projectile']:
                 projectile_count = attack_info.get('projectile_count', 1)
+                
+                # Get target position (handle both Unit and Structure)
+                target_pos = (target.row, target.col) if is_structure else target.position
+                target_name = target.type if is_structure else target.unit_type
                 
                 # Create multiple projectiles with offset for visual variety
                 for i in range(projectile_count):
@@ -1535,8 +1547,8 @@ class Scenario:
                         spread_factor *= 0.4  # Scale down the spread
                         
                         # Calculate perpendicular offset
-                        delta_row = target.position[0] - self.selected_unit.position[0]
-                        delta_col = target.position[1] - self.selected_unit.position[1]
+                        delta_row = target_pos[0] - self.selected_unit.position[0]
+                        delta_col = target_pos[1] - self.selected_unit.position[1]
                         
                         # Perpendicular is (-delta_col, delta_row) rotated 90 degrees
                         offset_row = -delta_col * spread_factor * 0.2
@@ -1546,7 +1558,7 @@ class Scenario:
                     
                     projectile = Projectile(
                         start_pos=self.selected_unit.position,
-                        target_pos=target.position,
+                        target_pos=target_pos,
                         speed=attack_info['projectile_speed'],
                         sprite_name=attack_info['sprite_name'],
                         attacker=self.selected_unit,
@@ -1562,12 +1574,16 @@ class Scenario:
                     self.projectiles.append(projectile)
                 
                 if projectile_count > 1:
-                    print(f"{self.selected_unit.unit_type} fired {projectile_count} projectiles at {target.unit_type}")
+                    print(f"{self.selected_unit.unit_type} fired {projectile_count} projectiles at {target_name}")
                 else:
-                    print(f"{self.selected_unit.unit_type} fired projectile at {target.unit_type}")
+                    print(f"{self.selected_unit.unit_type} fired projectile at {target_name}")
             else:
                 # Melee attack - damage already applied with hit/miss determined
                 is_hit = attack_info.get('hit', False)
+                
+                # Get target position and name (handle both Unit and Structure)
+                target_pos = (target.row, target.col) if is_structure else target.position
+                target_name = target.type if is_structure else target.unit_type
                 
                 # Add hit/miss message with damage
                 if self.show_combat_messages:
@@ -1579,16 +1595,20 @@ class Scenario:
                         # Show 0 for miss
                         message = "0"
                         color = (255, 0, 0)  # Red for miss
-                    self.add_combat_message(message, target.position, color, 0.0)
+                    self.add_combat_message(message, target_pos, color, 0.0)
                 
                 if is_hit:
-                    print(f"{self.selected_unit.unit_type} attacked {target.unit_type} for {attack_info['damage']} damage (HP: {target.health}/{target.max_health})")
+                    print(f"{self.selected_unit.unit_type} attacked {target_name} for {attack_info['damage']} damage (HP: {target.health}/{target.max_health})")
                     
-                    # Check if target is dying
-                    if target.is_dying:
-                        print(f"{target.unit_type} is defeated!")
+                    # Check if target is dying (units) or destroyed (structures)
+                    if is_structure:
+                        if not target.is_alive:
+                            print(f"{target_name} destroyed!")
+                    else:
+                        if target.is_dying:
+                            print(f"{target_name} is defeated!")
                 else:
-                    print(f"{self.selected_unit.unit_type} missed {target.unit_type}!")
+                    print(f"{self.selected_unit.unit_type} missed {target_name}!")
             
             # Mark unit as inactive after attacking
             self.selected_unit.is_active = False
