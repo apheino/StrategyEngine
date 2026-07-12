@@ -160,6 +160,7 @@ class ScenarioEditor:
         
         # Unit creator state
         self.creating_unit = False
+        self.editing_unit_name = None  # Name of unit being edited (None if creating new)
         self.unit_form_data = {}
         self.active_input_field = None
         self.input_text = ""
@@ -328,7 +329,14 @@ class ScenarioEditor:
                 for i, unit_type in enumerate(UNIT_TYPES):
                     btn_y = start_y + i * 40
                     if btn_y <= y < btn_y + 35:
-                        self.selected_unit = unit_type
+                        # Check if clicking edit button
+                        edit_btn_rect = pygame.Rect(PANEL_WIDTH - 55, btn_y, 45, 35)
+                        if edit_btn_rect.collidepoint(x, y):
+                            self.start_unit_editor(unit_type)
+                            return
+                        else:
+                            # Regular selection
+                            self.selected_unit = unit_type
                         break
                 
                 # Create New Unit button
@@ -372,6 +380,7 @@ class ScenarioEditor:
     def start_unit_creator(self):
         """Start the unit creation process"""
         self.creating_unit = True
+        self.editing_unit_name = None
         self.unit_form_data = {
             "name": "",
             "max_health": "100",
@@ -391,16 +400,51 @@ class ScenarioEditor:
         self.active_input_field = "name"
         print("Unit creator started. Enter unit details.")
     
+    def start_unit_editor(self, unit_name):
+        """Start editing an existing unit"""
+        unit_file = Path(f"resources/units/{unit_name}.json")
+        if not unit_file.exists():
+            print(f"Error: Unit file not found: {unit_file}")
+            return
+        
+        try:
+            with open(unit_file, 'r') as f:
+                unit_data = json.load(f)
+            
+            self.creating_unit = True
+            self.editing_unit_name = unit_name
+            self.unit_form_data = {
+                "name": unit_name,
+                "max_health": str(unit_data.get("max_health", 100)),
+                "attack_power": str(unit_data.get("attack_power", 20)),
+                "defense": str(unit_data.get("defense", 5)),
+                "attack_range": str(unit_data.get("attack_range", 1)),
+                "max_mobility": str(unit_data.get("max_mobility", 3)),
+                "speed": str(unit_data.get("speed", 10)),
+                "projectile_speed": str(unit_data.get("projectile_speed", 15)),
+                "projectile_count": str(unit_data.get("projectile_count", 1)),
+                "projectile_sprite": str(unit_data.get("projectile_sprite") or "null"),
+                "hit_chance": str(unit_data.get("hit_chance", 0.95)),
+                "damage_std": str(unit_data.get("damage_std", 2.0)),
+                "fire_type": str(unit_data.get("fire_type", "direct")),
+                "vision_range": str(unit_data.get("vision_range", 5))
+            }
+            self.active_input_field = "name"
+            print(f"Editing unit: {unit_name}")
+        except Exception as e:
+            print(f"Error loading unit data: {e}")
+    
     def draw_unit_creator(self, y_start):
         """Draw the unit creator form"""
         y_offset = y_start
         
         # Title
-        title = self.font.render("Create New Unit", True, BLACK)
+        title_text = "Edit Unit" if self.editing_unit_name else "Create New Unit"
+        title = self.font.render(title_text, True, BLACK)
         self.screen.blit(title, (10, y_offset))
         y_offset += 35
         
-        # Form fields
+        # Form fields - now includes projectile_sprite
         fields = [
             ("name", "Name:"),
             ("max_health", "Health:"),
@@ -409,6 +453,7 @@ class ScenarioEditor:
             ("attack_range", "Range:"),
             ("max_mobility", "Mobility:"),
             ("vision_range", "Vision:"),
+            ("projectile_sprite", "Proj Sprite:"),
         ]
         
         for field_key, field_label in fields:
@@ -453,7 +498,7 @@ class ScenarioEditor:
         """Handle clicks in unit creator form"""
         # Check field clicks
         y_offset = TOOLBAR_HEIGHT + 45
-        fields = ["name", "max_health", "attack_power", "defense", "attack_range", "max_mobility", "vision_range"]
+        fields = ["name", "max_health", "attack_power", "defense", "attack_range", "max_mobility", "vision_range", "projectile_sprite"]
         
         for field in fields:
             input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
@@ -490,7 +535,7 @@ class ScenarioEditor:
             self.unit_form_data[self.active_input_field] = self.input_text
             
             # Move to next field
-            fields = ["name", "max_health", "attack_power", "defense", "attack_range", "max_mobility", "vision_range"]
+            fields = ["name", "max_health", "attack_power", "defense", "attack_range", "max_mobility", "vision_range", "projectile_sprite"]
             try:
                 current_idx = fields.index(self.active_input_field)
                 if current_idx < len(fields) - 1:
@@ -520,7 +565,7 @@ class ScenarioEditor:
         return False
     
     def save_unit_definition(self):
-        """Save the new unit definition to a JSON file"""
+        """Save the unit definition to a JSON file"""
         # Update form data with current input
         if self.active_input_field:
             self.unit_form_data[self.active_input_field] = self.input_text
@@ -530,13 +575,25 @@ class ScenarioEditor:
             print("Error: Unit name is required")
             return
         
-        # Check if unit already exists
+        # Check if this is an edit and name changed
+        if self.editing_unit_name and self.editing_unit_name != unit_name:
+            old_file = Path(f"resources/units/{self.editing_unit_name}.json")
+            if old_file.exists():
+                old_file.unlink()
+                print(f"Renamed unit from '{self.editing_unit_name}' to '{unit_name}'")
+        
+        # Check if unit already exists (for new units)
         unit_file = Path(f"resources/units/{unit_name}.json")
-        if unit_file.exists():
+        if not self.editing_unit_name and unit_file.exists():
             print(f"Warning: Unit '{unit_name}' already exists. Overwriting...")
         
         # Build unit definition
         try:
+            # Handle projectile_sprite - convert "null" or "None" strings to None
+            projectile_sprite_value = self.unit_form_data.get("projectile_sprite", "null").strip()
+            if projectile_sprite_value.lower() in ["null", "none", ""]:
+                projectile_sprite_value = None
+            
             unit_def = {
                 "max_health": int(self.unit_form_data.get("max_health", "100")),
                 "attack_power": int(self.unit_form_data.get("attack_power", "20")),
@@ -546,7 +603,7 @@ class ScenarioEditor:
                 "speed": int(self.unit_form_data.get("speed", "10")),
                 "projectile_speed": int(self.unit_form_data.get("projectile_speed", "15")),
                 "projectile_count": int(self.unit_form_data.get("projectile_count", "1")),
-                "projectile_sprite": self.unit_form_data.get("projectile_sprite", "null"),
+                "projectile_sprite": projectile_sprite_value,
                 "hit_chance": float(self.unit_form_data.get("hit_chance", "0.95")),
                 "damage_std": float(self.unit_form_data.get("damage_std", "2.0")),
                 "fire_type": self.unit_form_data.get("fire_type", "direct"),
@@ -563,8 +620,11 @@ class ScenarioEditor:
         with open(unit_file, 'w') as f:
             json.dump(unit_def, f, indent=2)
         
-        print(f"Unit '{unit_name}' saved successfully!")
+        action = "updated" if self.editing_unit_name else "created"
+        print(f"Unit '{unit_name}' {action} successfully!")
         print(f"  File: {unit_file}")
+        if unit_def.get("projectile_sprite") and unit_def["projectile_sprite"] != "null":
+            print(f"  Projectile: {unit_def['projectile_sprite']}")
         
         # Refresh unit types list
         global UNIT_TYPES
@@ -573,6 +633,7 @@ class ScenarioEditor:
         
         # Exit creator mode
         self.creating_unit = False
+        self.editing_unit_name = None
         self.active_input_field = None
         self.input_text = ""
     
@@ -1075,7 +1136,7 @@ class ScenarioEditor:
                 y_offset += 30
                 
                 for unit_type in UNIT_TYPES:
-                    btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 35)
+                    btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 70, 35)
                     is_selected = (unit_type == self.selected_unit)
                     color = YELLOW if is_selected else WHITE
                     pygame.draw.rect(self.screen, color, btn_rect)
@@ -1083,6 +1144,14 @@ class ScenarioEditor:
                     
                     name_surf = self.small_font.render(unit_type.capitalize(), True, BLACK)
                     self.screen.blit(name_surf, (15, y_offset + 8))
+                    
+                    # Edit button for each unit
+                    edit_btn = pygame.Rect(PANEL_WIDTH - 55, y_offset, 45, 35)
+                    pygame.draw.rect(self.screen, LIGHT_GRAY, edit_btn)
+                    pygame.draw.rect(self.screen, BLACK, edit_btn, 1)
+                    edit_text = self.small_font.render("Edit", True, BLACK)
+                    edit_rect = edit_text.get_rect(center=edit_btn.center)
+                    self.screen.blit(edit_text, edit_rect)
                     
                     y_offset += 40
                 
