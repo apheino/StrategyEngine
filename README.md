@@ -1,4 +1,4 @@
-# Strategy Game - Python & Pygame
+# Combat Alley 2000
 
 A turn-based strategy game built with Python and Pygame featuring grid-based combat, unit management, and tactical gameplay.
 
@@ -368,4 +368,4 @@ This is a personal project for learning and experimentation.
 
 ## Credits
 
-Built as a learning project for turn-based strategy game development with Python and Pygame.
+Combat Alley 2000 - built as a learning project for turn-based strategy game development with Python and Pygame.

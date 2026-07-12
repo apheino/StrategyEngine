@@ -1,6 +1,6 @@
 # Tests
 
-This directory contains all test files for the strategy game project.
+This directory contains all test files for Combat Alley 2000.
 
 ## Running Tests
 

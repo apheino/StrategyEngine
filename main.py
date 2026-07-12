@@ -1,5 +1,5 @@
 """
-Main game loop and entry point for the strategy game
+Main game loop and entry point for Combat Alley 2000
 
 This is the main module that initializes Pygame, sets up the game window,
 and runs the main game loop. It handles:
@@ -57,7 +57,7 @@ pygame.init()
 # Setup display window
 # pygame.NOFRAME creates a window without title bar and borders
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
-pygame.display.set_caption("Strategy Game")
+pygame.display.set_caption("Combat Alley 2000")
 
 # Clock for managing frame rate and delta time
 clock = pygame.time.Clock()
@@ -762,7 +762,7 @@ def draw(fps):
         fps (float): Current frames per second for FPS counter display
     """
     if current_state == GameState.MAIN_MENU:
-        draw_menu("TACTICAL STRATEGY", menu_buttons, selected_menu_item)
+        draw_menu("COMBAT ALLEY 2000", menu_buttons, selected_menu_item)
     elif current_state == GameState.SCENARIO_SELECT:
         draw_menu("SELECT SCENARIO", menu_buttons, selected_menu_item)
     elif current_state == GameState.STORY_SCREEN:

@@ -1,1 +1,1 @@
-"""Test suite for strategy game"""
+"""Test suite for Combat Alley 2000"""

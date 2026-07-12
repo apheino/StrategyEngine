@@ -1,5 +1,5 @@
 """
-Game constants for the strategy game
+Game constants for Combat Alley 2000
 
 This module defines all constant values used throughout the game, including
 display settings, colors, and other global configuration values.

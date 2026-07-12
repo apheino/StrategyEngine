@@ -1,6 +1,6 @@
 # Scripts
 
-This directory contains utility and setup scripts for the strategy game project.
+This directory contains utility and setup scripts for Combat Alley 2000.
 
 ## Files
 

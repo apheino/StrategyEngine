@@ -1,6 +1,6 @@
 # Documentation
 
-This directory contains all documentation for the strategy game project.
+This directory contains all documentation for Combat Alley 2000.
 
 ## Files
 
