@@ -569,6 +569,9 @@ def handle_playing_events(event):
         elif event.key == pygame.K_SPACE:
             # SPACE key - end current player's turn
             scenario.end_turn()
+        elif event.key == pygame.K_TAB:
+            # TAB key - cycle to next active unit
+            scenario.cycle_to_next_active_unit()
         elif event.key == pygame.K_h:
             # H key - toggle damage numbers display
             scenario.show_combat_messages = not scenario.show_combat_messages
@@ -688,6 +691,9 @@ def draw_gameplay(fps):
     # Draw fog of war overlay on unseen cells
     scenario.draw_fog_of_war(screen)
     
+    # Draw unit status indicators (green/yellow/gray glows)
+    scenario.draw_unit_status_indicators(screen)
+    
     # Draw selection highlights (green for valid moves, red for valid attacks)
     scenario.draw_selection_highlights(screen)
     
@@ -717,6 +723,7 @@ def draw_gameplay(fps):
         "Click green to move",
         "Drag to pan map",
         "SPACE: End turn",
+        "TAB: Cycle units",
         "H: Toggle damage #s",
         "P: Show all map",
         "ESC: Main menu"
@@ -747,6 +754,9 @@ def draw_gameplay(fps):
     
     # Hover tooltip
     scenario.draw_hover_info(screen, small_font)
+    
+    # Move preview tooltip
+    scenario.draw_move_preview(screen, small_font)
     
     # FPS counter in upper-right corner
     fps_text = small_font.render(f"FPS: {int(fps)}", True, LIGHT_GRAY)

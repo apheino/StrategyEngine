@@ -91,6 +91,13 @@ class Scenario:
         # Unit currently under mouse cursor (for tooltip display)
         self.hovered_unit = None
         
+        # Hovered move destination (for move preview tooltip)
+        self.hovered_move = None
+        
+        # Attack range visualization
+        self.attack_range_cells = []  # Cells attackable from current position
+        self.move_attack_range_cells = []  # Cells attackable after moving
+        
         # ========================================
         # COMBAT STATE
         # ========================================
@@ -323,6 +330,10 @@ class Scenario:
                     self.selected_unit = unit_finished_moving
                     self.valid_moves = self.calculate_valid_moves(unit_finished_moving)
                     self.valid_attacks = self.calculate_valid_attacks(unit_finished_moving)
+                    
+                    # Recalculate attack range visualization
+                    self.attack_range_cells = self.calculate_attack_range_cells(unit_finished_moving)
+                    self.move_attack_range_cells = self.calculate_move_attack_range_cells(unit_finished_moving)
         
         # Update projectiles
         for projectile in self.projectiles[:]:  # Copy list to avoid modification during iteration
@@ -517,13 +528,62 @@ class Scenario:
                 
                 screen.blit(rotated_sprite, sprite_rect)
     
+    def draw_unit_status_indicators(self, screen):
+        """
+        Draw status indicators (glows) for all player units
+        
+        Shows unit status at a glance:
+        - Green glow: Full mobility (hasn't moved)
+        - Yellow glow: Partial mobility (moved but can move again)
+        - Gray glow: No mobility (inactive)
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+        """
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        
+        # Calculate grid dimensions
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = self.grid.cell_size * self.grid.zoom
+        scaled_grid_width = grid_world_width * self.grid.zoom
+        scaled_grid_height = grid_world_height * self.grid.zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
+        
+        # Draw status glow for each player unit
+        for unit in self.units:
+            if unit.team == 0 and unit.is_alive and not unit.is_dying:
+                row, col = unit.position
+                x = center_x + col * scaled_cell_size
+                y = center_y + row * scaled_cell_size
+                
+                # Determine glow color based on unit status
+                if unit.mobility == unit.max_mobility:
+                    # Full mobility - green glow
+                    glow_color = (0, 255, 0, 60)
+                elif unit.mobility > 0 and unit.is_active:
+                    # Partial mobility - yellow glow
+                    glow_color = (255, 255, 0, 60)
+                else:
+                    # No mobility - gray glow
+                    glow_color = (128, 128, 128, 60)
+                
+                # Draw glow overlay
+                glow_surface = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
+                glow_surface.fill(glow_color)
+                screen.blit(glow_surface, (x, y))
+    
     def draw_selection_highlights(self, screen):
         """
         Draw UI overlays for valid moves and attacks
         
         Renders:
         - Green highlighted cells for valid move destinations
-        - Red highlighted cells for valid attack targets
+        - Red highlighted cells for attack range from current position
+        - Orange highlighted cells for move+attack range
         - Yellow border around selected unit
         
         Args:
@@ -542,7 +602,27 @@ class Scenario:
         center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
         center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
         
-        # Draw valid move positions
+        # Draw move+attack range (orange) - draw first so it appears behind other overlays
+        for row, col in self.move_attack_range_cells:
+            x = center_x + col * scaled_cell_size
+            y = center_y + row * scaled_cell_size
+            
+            # Draw semi-transparent orange overlay
+            overlay = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
+            overlay.fill((255, 165, 0, 50))  # Orange with low alpha
+            screen.blit(overlay, (x, y))
+        
+        # Draw attack range from current position (red) - darker than move+attack
+        for row, col in self.attack_range_cells:
+            x = center_x + col * scaled_cell_size
+            y = center_y + row * scaled_cell_size
+            
+            # Draw semi-transparent red overlay
+            overlay = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
+            overlay.fill((255, 0, 0, 70))  # Red with alpha
+            screen.blit(overlay, (x, y))
+        
+        # Draw valid move positions (green)
         for row, col in self.valid_moves:
             x = center_x + col * scaled_cell_size
             y = center_y + row * scaled_cell_size
@@ -556,7 +636,7 @@ class Scenario:
             pygame.draw.rect(screen, (0, 255, 0), 
                            (x, y, scaled_cell_size, scaled_cell_size), 2)
         
-        # Draw attackable enemies
+        # Draw attackable enemies (red border)
         for enemy in self.valid_attacks:
             row, col = enemy.position
             x = center_x + col * scaled_cell_size
@@ -606,6 +686,7 @@ class Scenario:
         
         Converts mouse screen coordinates to grid coordinates and checks for units.
         Sets self.hovered_unit for tooltip display. Works for both player and enemy units.
+        Also tracks hovered move destinations for move preview tooltips.
         
         Args:
             mouse_x (int): Mouse X coordinate in screen pixels
@@ -621,8 +702,15 @@ class Scenario:
             
             # Show hover for any unit
             self.hovered_unit = unit
+            
+            # Check if hovering over a valid move destination
+            if (row, col) in self.valid_moves:
+                self.hovered_move = (row, col)
+            else:
+                self.hovered_move = None
         else:
             self.hovered_unit = None
+            self.hovered_move = None
     
     def draw_hover_info(self, screen, font):
         """
@@ -701,6 +789,178 @@ class Scenario:
         for i, line in enumerate(info_lines):
             text_surface = font.render(line, True, (255, 255, 255))
             screen.blit(text_surface, (tooltip_x + padding, tooltip_y + padding + i * line_height))
+    
+    def calculate_attack_range_cells(self, unit, from_position=None):
+        """
+        Calculate all cells within attack range from a given position
+        
+        Args:
+            unit (Unit): Unit to calculate attack range for
+            from_position (tuple, optional): Position to calculate from (row, col).
+                                            If None, uses unit's current position.
+        
+        Returns:
+            list: List of (row, col) tuples within attack range
+        """
+        if from_position is None:
+            from_position = unit.position
+        
+        start_row, start_col = from_position
+        range_cells = []
+        
+        # Check all cells within Manhattan distance of attack_range
+        for row in range(max(0, start_row - unit.attack_range), 
+                        min(self.grid.grid_height, start_row + unit.attack_range + 1)):
+            for col in range(max(0, start_col - unit.attack_range), 
+                            min(self.grid.grid_width, start_col + unit.attack_range + 1)):
+                # Calculate Manhattan distance
+                distance = abs(row - start_row) + abs(col - start_col)
+                
+                if distance > 0 and distance <= unit.attack_range:
+                    # For direct fire, check line of sight
+                    if unit.fire_type == 'direct':
+                        if self.has_line_of_sight(from_position, (row, col)):
+                            range_cells.append((row, col))
+                    else:
+                        # Indirect fire can shoot over obstacles
+                        range_cells.append((row, col))
+        
+        return range_cells
+    
+    def calculate_move_attack_range_cells(self, unit):
+        """
+        Calculate all cells attackable after moving (move+attack range)
+        
+        Finds union of attack ranges from all valid move destinations.
+        
+        Args:
+            unit (Unit): Unit to calculate move+attack range for
+        
+        Returns:
+            list: List of (row, col) tuples attackable after moving
+        """
+        move_attack_cells = set()
+        
+        # Add attack range from current position
+        for cell in self.attack_range_cells:
+            move_attack_cells.add(cell)
+        
+        # Add attack range from each valid move destination
+        for move_dest in self.valid_moves:
+            attack_from_dest = self.calculate_attack_range_cells(unit, move_dest)
+            for cell in attack_from_dest:
+                move_attack_cells.add(cell)
+        
+        # Remove cells that are already in direct attack range (to avoid overlap)
+        move_attack_only = [cell for cell in move_attack_cells if cell not in self.attack_range_cells]
+        
+        return move_attack_only
+    
+    def draw_move_preview(self, screen, font):
+        """
+        Draw move preview tooltip when hovering over a valid move destination
+        
+        Shows:
+        - Move cost in mobility points
+        - Remaining mobility after move
+        - Enemies in attack range from that position
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+            font (pygame.Font): Font to use for text rendering
+        """
+        if not self.hovered_move or not self.selected_unit:
+            return
+        
+        row, col = self.hovered_move
+        
+        # Calculate move cost
+        if self.hovered_move in self.movement_paths:
+            path = self.movement_paths[self.hovered_move]
+            move_cost = len(path) - 1
+        else:
+            return
+        
+        remaining_mobility = self.selected_unit.mobility - move_cost
+        
+        # Count enemies in attack range from this position
+        attackable_from_here = self.calculate_attack_range_cells(self.selected_unit, self.hovered_move)
+        enemy_count = sum(1 for enemy in self.units 
+                         if enemy.team != self.selected_unit.team 
+                         and enemy.is_alive 
+                         and not enemy.is_dying 
+                         and enemy.position in attackable_from_here)
+        
+        # Get mouse position
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        
+        # Create info text
+        info_lines = [
+            f"Move Cost: {move_cost}",
+            f"Remaining: {remaining_mobility}",
+            f"Enemies in range: {enemy_count}"
+        ]
+        
+        # Calculate tooltip size
+        line_height = 20
+        padding = 8
+        max_width = max([font.size(line)[0] for line in info_lines])
+        tooltip_width = max_width + padding * 2
+        tooltip_height = len(info_lines) * line_height + padding * 2
+        
+        # Position tooltip (offset from mouse, keep on screen)
+        tooltip_x = mouse_x + 15
+        tooltip_y = mouse_y + 15
+        
+        # Keep tooltip on screen
+        if tooltip_x + tooltip_width > screen.get_width():
+            tooltip_x = mouse_x - tooltip_width - 15
+        if tooltip_y + tooltip_height > screen.get_height():
+            tooltip_y = mouse_y - tooltip_height - 15
+        
+        # Draw background
+        background = pygame.Surface((tooltip_width, tooltip_height), pygame.SRCALPHA)
+        background.fill((40, 40, 80, 230))  # Dark blue background
+        screen.blit(background, (tooltip_x, tooltip_y))
+        
+        # Draw border
+        pygame.draw.rect(screen, (100, 200, 255), 
+                        (tooltip_x, tooltip_y, tooltip_width, tooltip_height), 2)
+        
+        # Draw text
+        for i, line in enumerate(info_lines):
+            text_surface = font.render(line, True, (255, 255, 255))
+            screen.blit(text_surface, (tooltip_x + padding, tooltip_y + padding + i * line_height))
+    
+    def cycle_to_next_active_unit(self):
+        """
+        Cycle to the next active player unit
+        
+        Selects the next unit in sequence that can still act this turn.
+        Wraps around to the first unit if at the end of the list.
+        Updates selection, valid moves, and attack ranges.
+        """
+        if self.current_turn != 0:
+            return  # Only cycle during player turn
+        
+        # Get all active player units
+        active_units = [u for u in self.units 
+                       if u.team == 0 and u.is_alive and not u.is_dying and u.is_active and u.mobility > 0]
+        
+        if not active_units:
+            return
+        
+        # Find current unit's index in active units list
+        current_index = -1
+        if self.selected_unit and self.selected_unit in active_units:
+            current_index = active_units.index(self.selected_unit)
+        
+        # Cycle to next unit (wrap around)
+        next_index = (current_index + 1) % len(active_units)
+        next_unit = active_units[next_index]
+        
+        # Select the next unit
+        self.select_unit(next_unit)
     
     def add_combat_message(self, message, position, color=(255, 255, 255), x_offset=0.0):
         """
@@ -1112,17 +1372,17 @@ class Scenario:
         
         return False
     
-    def select_unit(self, row, col):
+    def select_unit(self, row_or_unit, col=None):
         """
-        Select a player unit at given position
+        Select a player unit at given position or select a specific unit object
         
         Only allows selection during player turn (turn 0).
         Only player units (team 0) that are alive and active can be selected.
-        Calculates and stores valid moves and attacks for the selected unit.
+        Calculates and stores valid moves, attacks, and attack ranges for the selected unit.
         
         Args:
-            row (int): Grid row coordinate
-            col (int): Grid column coordinate
+            row_or_unit: Either grid row coordinate (int) or Unit object
+            col (int, optional): Grid column coordinate (required if row_or_unit is int)
         
         Returns:
             bool: True if unit was selected, False otherwise
@@ -1131,13 +1391,23 @@ class Scenario:
         if self.current_turn != 0:
             return False
         
-        unit = self.get_unit_at(row, col)
+        # Handle both (row, col) and direct Unit object
+        if isinstance(row_or_unit, Unit):
+            unit = row_or_unit
+        else:
+            row, col = row_or_unit, col
+            unit = self.get_unit_at(row, col)
         
         # Can only select player units (team 0) that are active
         if unit and unit.team == 0 and unit.is_alive and unit.is_active:
             self.selected_unit = unit
             self.valid_moves = self.calculate_valid_moves(unit)
             self.valid_attacks = self.calculate_valid_attacks(unit)
+            
+            # Calculate attack range visualization
+            self.attack_range_cells = self.calculate_attack_range_cells(unit)
+            self.move_attack_range_cells = self.calculate_move_attack_range_cells(unit)
+            
             print(f"Selected {unit.unit_type} at {unit.position}, {len(self.valid_moves)} valid moves, {len(self.valid_attacks)} attackable enemies")
             return True
         else:
@@ -1148,12 +1418,15 @@ class Scenario:
         """
         Deselect currently selected unit and clear valid actions
         
-        Clears selected_unit, valid_moves, valid_attacks, and movement_paths.
+        Clears selected_unit, valid_moves, valid_attacks, attack ranges, and movement_paths.
         """
         self.selected_unit = None
         self.valid_moves = []
         self.valid_attacks = []
         self.movement_paths = {}
+        self.attack_range_cells = []
+        self.move_attack_range_cells = []
+        self.hovered_move = None
     
     def attempt_move_unit(self, row, col):
         """
