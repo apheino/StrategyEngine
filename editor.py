@@ -167,6 +167,7 @@ class ScenarioEditor:
         
         # Terrain creator state
         self.creating_terrain = False
+        self.editing_terrain_id = None  # ID of terrain being edited (None if creating new)
         self.terrain_form_data = {}
         self.color_component = 0  # 0=R, 1=G, 2=B
         
@@ -310,7 +311,14 @@ class ScenarioEditor:
                 for i, (terrain_id, terrain_info) in enumerate(TERRAIN_TYPES.items()):
                     btn_y = start_y + i * 40
                     if btn_y <= y < btn_y + 35:
-                        self.selected_terrain = terrain_id
+                        # Check if clicking edit button
+                        edit_btn_rect = pygame.Rect(PANEL_WIDTH - 55, btn_y, 45, 35)
+                        if edit_btn_rect.collidepoint(x, y):
+                            self.start_terrain_editor(terrain_id)
+                            return
+                        else:
+                            # Regular selection
+                            self.selected_terrain = terrain_id
                         break
                 
                 # Create New Terrain button
@@ -640,6 +648,7 @@ class ScenarioEditor:
     def start_terrain_creator(self):
         """Start the terrain creation process"""
         self.creating_terrain = True
+        self.editing_terrain_id = None  # Reset editing mode
         self.terrain_form_data = {
             "name": "",
             "passability": "0",
@@ -652,12 +661,32 @@ class ScenarioEditor:
         self.color_component = 0
         print("Terrain creator started. Enter terrain details.")
     
+    def start_terrain_editor(self, terrain_id):
+        """Load an existing terrain for editing"""
+        global TERRAIN_TYPES
+        terrain_data = TERRAIN_TYPES[terrain_id]
+        self.creating_terrain = True
+        self.editing_terrain_id = terrain_id
+        self.terrain_form_data = {
+            "name": terrain_data.get("name", ""),
+            "passability": str(terrain_data.get("passability", 0)),
+            "color_r": str(terrain_data.get("color", (100, 200, 100))[0]),
+            "color_g": str(terrain_data.get("color", (100, 200, 100))[1]),
+            "color_b": str(terrain_data.get("color", (100, 200, 100))[2]),
+            "icon": terrain_data.get("icon", "custom")
+        }
+        self.active_input_field = "name"
+        self.input_text = self.terrain_form_data["name"]  # Pre-fill name in input
+        self.color_component = 0
+        print(f"Editing terrain: {terrain_data.get('name', 'Unknown')} (ID: {terrain_id})")
+    
     def draw_terrain_creator(self, y_start):
         """Draw the terrain creator form"""
         y_offset = y_start
         
         # Title
-        title = self.font.render("Create Terrain", True, BLACK)
+        title_text = "Edit Terrain" if self.editing_terrain_id is not None else "Create Terrain"
+        title = self.font.render(title_text, True, BLACK)
         self.screen.blit(title, (10, y_offset))
         y_offset += 35
         
@@ -854,7 +883,7 @@ class ScenarioEditor:
         return False
     
     def save_terrain_definition(self):
-        """Save the new terrain definition"""
+        """Save the terrain definition (create new or update existing)"""
         # Update form data with current input
         if self.active_input_field:
             self.terrain_form_data[self.active_input_field] = self.input_text
@@ -883,26 +912,33 @@ class ScenarioEditor:
             print(f"Error: Invalid terrain attribute values: {e}")
             return
         
-        # Find next available terrain ID
         global TERRAIN_TYPES
-        next_id = max(TERRAIN_TYPES.keys()) + 1 if TERRAIN_TYPES else 0
         
-        # Add to terrain types
-        TERRAIN_TYPES[next_id] = terrain_def
+        if self.editing_terrain_id is not None:
+            # Update existing terrain
+            terrain_id = self.editing_terrain_id
+            TERRAIN_TYPES[terrain_id] = terrain_def
+            action = "updated"
+        else:
+            # Create new terrain with next available ID
+            terrain_id = max(TERRAIN_TYPES.keys()) + 1 if TERRAIN_TYPES else 0
+            TERRAIN_TYPES[terrain_id] = terrain_def
+            action = "created"
         
         # Save to file
         save_terrain_types(TERRAIN_TYPES)
         
-        print(f"Terrain '{terrain_name}' saved successfully!")
-        print(f"  ID: {next_id}")
+        print(f"Terrain '{terrain_name}' {action} successfully!")
+        print(f"  ID: {terrain_id}")
         print(f"  Color: RGB{terrain_def['color']}")
         print(f"  Passability: {PASSABILITY_LABELS.get(terrain_def['passability'], 'Unknown')}")
         
-        # Select the new terrain
-        self.selected_terrain = next_id
+        # Select the terrain
+        self.selected_terrain = terrain_id
         
         # Exit creator mode
         self.creating_terrain = False
+        self.editing_terrain_id = None
         self.active_input_field = None
         self.input_text = ""
     
@@ -1092,8 +1128,8 @@ class ScenarioEditor:
                 y_offset += 30
                 
                 for terrain_id, terrain_info in TERRAIN_TYPES.items():
-                    # Draw button
-                    btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 35)
+                    # Draw main button
+                    btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 70, 35)
                     is_selected = (terrain_id == self.selected_terrain)
                     color = YELLOW if is_selected else WHITE
                     pygame.draw.rect(self.screen, color, btn_rect)
@@ -1113,6 +1149,14 @@ class ScenarioEditor:
                     pass_label = PASSABILITY_LABELS.get(passability, "Unknown")
                     pass_surf = self.small_font.render(f"({pass_label})", True, DARK_GRAY)
                     self.screen.blit(pass_surf, (45, y_offset + 20))
+                    
+                    # Edit button for each terrain
+                    edit_btn = pygame.Rect(PANEL_WIDTH - 55, y_offset, 45, 35)
+                    pygame.draw.rect(self.screen, LIGHT_GRAY, edit_btn)
+                    pygame.draw.rect(self.screen, BLACK, edit_btn, 2)
+                    edit_text = self.small_font.render("Edit", True, BLACK)
+                    edit_text_rect = edit_text.get_rect(center=edit_btn.center)
+                    self.screen.blit(edit_text, edit_text_rect)
                     
                     y_offset += 40
                 
