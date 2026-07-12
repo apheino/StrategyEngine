@@ -20,6 +20,7 @@ Key responsibilities:
 import os
 import json
 import pygame
+from config import game_config
 from grid import Grid, PASSABLE_EASY, PASSABLE_SLOW, PASSABLE_BLOCKED
 from unit import Unit
 from projectile import Projectile
@@ -122,10 +123,10 @@ class Scenario:
         # TURN MANAGEMENT
         # ========================================
         
-        # Current turn (0 = player, 1 = enemy)
-        self.current_turn = 0
+        # Current turn (team ID from config)
+        self.current_turn = game_config.get_starting_team()
         
-        # Calculate initial visible cells for player
+        # Calculate initial visible cells for player-controlled teams
         self.calculate_visible_cells()
         
         print(f"Scenario {scenario_number} loaded: {len(self.units)} units on {self.grid.grid_height}x{self.grid.grid_width} map")
@@ -239,17 +240,20 @@ class Scenario:
     
     def calculate_visible_cells(self):
         """
-        Calculate which cells are visible to the player (team 0)
+        Calculate which cells are visible to player-controlled teams
         
-        Each player unit can see cells within their vision_range.
+        Each player-controlled unit can see cells within their vision_range.
         Uses Euclidean distance for circular vision range.
         Updates self.visible_cells set with (row, col) tuples.
         Also adds newly visible cells to explored_cells (permanent).
         """
         self.visible_cells = set()
         
-        # Get all player units
-        player_units = self.get_units_by_team(0)
+        # Get all player-controlled team IDs from config
+        player_team_ids = [t['id'] for t in game_config.get_teams() if t.get('player_controlled', False)]
+        
+        # Get all units from player-controlled teams
+        player_units = [u for u in self.units if u.team in player_team_ids and u.is_alive]
         
         # For each player unit, add all cells within vision range
         for unit in player_units:
@@ -553,23 +557,26 @@ class Scenario:
         center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
         center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
         
+        # Get player-controlled team IDs
+        player_team_ids = [t['id'] for t in game_config.get_teams() if t.get('player_controlled', False)]
+        
         # Draw status glow for each player unit
         for unit in self.units:
-            if unit.team == 0 and unit.is_alive and not unit.is_dying:
+            if unit.team in player_team_ids and unit.is_alive and not unit.is_dying:
                 row, col = unit.position
                 x = center_x + col * scaled_cell_size
                 y = center_y + row * scaled_cell_size
                 
-                # Determine glow color based on unit status
+                # Determine glow color based on unit status (use config colors)
                 if unit.mobility == unit.max_mobility:
                     # Full mobility - green glow
-                    glow_color = (0, 255, 0, 60)
+                    glow_color = game_config.get_ui_color('unit_status_full', (0, 255, 0)) + (60,)
                 elif unit.mobility > 0 and unit.is_active:
                     # Partial mobility - yellow glow
-                    glow_color = (255, 255, 0, 60)
+                    glow_color = game_config.get_ui_color('unit_status_partial', (255, 255, 0)) + (60,)
                 else:
                     # No mobility - gray glow
-                    glow_color = (128, 128, 128, 60)
+                    glow_color = game_config.get_ui_color('unit_status_inactive', (128, 128, 128)) + (60,)
                 
                 # Draw glow overlay
                 glow_surface = pygame.Surface((int(scaled_cell_size), int(scaled_cell_size)), pygame.SRCALPHA)
@@ -939,13 +946,18 @@ class Scenario:
         Selects the next unit in sequence that can still act this turn.
         Wraps around to the first unit if at the end of the list.
         Updates selection, valid moves, and attack ranges.
+        Works for any player-controlled team.
         """
-        if self.current_turn != 0:
-            return  # Only cycle during player turn
+        # Get player-controlled team IDs
+        player_team_ids = [t['id'] for t in game_config.get_teams() if t.get('player_controlled', False)]
         
-        # Get all active player units
+        # Check if current turn is player-controlled
+        if self.current_turn not in player_team_ids:
+            return  # Only cycle during player-controlled turns
+        
+        # Get all active units for current player team
         active_units = [u for u in self.units 
-                       if u.team == 0 and u.is_alive and not u.is_dying and u.is_active and u.mobility > 0]
+                       if u.team == self.current_turn and u.is_alive and not u.is_dying and u.is_active and u.mobility > 0]
         
         if not active_units:
             return
@@ -1376,8 +1388,8 @@ class Scenario:
         """
         Select a player unit at given position or select a specific unit object
         
-        Only allows selection during player turn (turn 0).
-        Only player units (team 0) that are alive and active can be selected.
+        Only allows selection during player-controlled turns.
+        Only units from player-controlled teams that are alive and active can be selected.
         Calculates and stores valid moves, attacks, and attack ranges for the selected unit.
         
         Args:
@@ -1387,8 +1399,11 @@ class Scenario:
         Returns:
             bool: True if unit was selected, False otherwise
         """
-        # Only allow selection during player turn
-        if self.current_turn != 0:
+        # Get player-controlled team IDs
+        player_team_ids = [t['id'] for t in game_config.get_teams() if t.get('player_controlled', False)]
+        
+        # Only allow selection during player-controlled turns
+        if self.current_turn not in player_team_ids:
             return False
         
         # Handle both (row, col) and direct Unit object
@@ -1398,8 +1413,8 @@ class Scenario:
             row, col = row_or_unit, col
             unit = self.get_unit_at(row, col)
         
-        # Can only select player units (team 0) that are active
-        if unit and unit.team == 0 and unit.is_alive and unit.is_active:
+        # Can only select units from player-controlled teams that are active
+        if unit and unit.team in player_team_ids and unit.is_alive and unit.is_active:
             self.selected_unit = unit
             self.valid_moves = self.calculate_valid_moves(unit)
             self.valid_attacks = self.calculate_valid_attacks(unit)
@@ -1479,13 +1494,17 @@ class Scenario:
         - If unit selected: Try to attack target, or move to cell, or deselect
         - If no unit selected: Try to select unit at clicked cell
         
-        Only processes clicks during player turn (turn 0).
+        Only processes clicks during player-controlled turns.
         
         Args:
             row (int): Grid row clicked
             col (int): Grid column clicked
         """
-        if self.current_turn == 0:  # Player turn
+        # Get player-controlled team IDs
+        player_team_ids = [t['id'] for t in game_config.get_teams() if t.get('player_controlled', False)]
+        
+        # Only handle clicks during player-controlled turns
+        if self.current_turn in player_team_ids:
             # If we have a selected unit, try to attack or move
             if self.selected_unit:
                 # Check if clicking on an attackable enemy
@@ -1568,15 +1587,25 @@ class Scenario:
     
     def end_turn(self):
         """
-        End the current turn and switch to next player
+        End the current turn and switch to next team
         
-        Switches current_turn between 0 (player) and 1 (enemy).
+        Uses turn order from game configuration.
         Resets all units for the new turn (restores mobility, sets active).
         Deselects any selected unit.
-        If switching to enemy turn, automatically executes AI.
+        If switching to AI-controlled team, automatically executes AI.
         """
-        # Switch turn
-        self.current_turn = 1 - self.current_turn
+        # Get turn order from config
+        turn_order = game_config.get_turn_order()
+        
+        # Find current turn index
+        try:
+            current_index = turn_order.index(self.current_turn)
+        except ValueError:
+            current_index = 0
+        
+        # Switch to next team in turn order
+        next_index = (current_index + 1) % len(turn_order)
+        self.current_turn = turn_order[next_index]
         
         # Reset units for the new turn
         active_team_units = self.get_units_by_team(self.current_turn)
@@ -1586,9 +1615,11 @@ class Scenario:
         # Deselect any selected unit
         self.deselect_unit()
         
-        turn_name = "Player" if self.current_turn == 0 else "Enemy"
-        print(f"\n{turn_name} turn started")
+        # Get team name for logging
+        team_config = game_config.get_team_config(self.current_turn)
+        team_name = team_config['name'] if team_config else f"Team {self.current_turn}"
+        print(f"\n{team_name} turn started")
         
-        # If it's enemy turn, execute AI
-        if self.current_turn == 1:
+        # If it's AI-controlled team, execute AI
+        if not game_config.is_player_controlled(self.current_turn):
             self.execute_enemy_turn()

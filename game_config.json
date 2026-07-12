@@ -1,0 +1,83 @@
+{
+  "game": {
+    "name": "Combat Alley 2000",
+    "version": "1.0.0",
+    "author": "Strategy Engine Team",
+    "description": "A tactical turn-based strategy game",
+    "window_width": 1280,
+    "window_height": 720,
+    "fps": 60
+  },
+  
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue Alliance",
+      "description": "Player-controlled forces",
+      "color": [100, 150, 255],
+      "player_controlled": true,
+      "turn_order": 0
+    },
+    {
+      "id": 1,
+      "name": "Red Empire",
+      "description": "Enemy forces",
+      "color": [255, 100, 100],
+      "player_controlled": false,
+      "turn_order": 1
+    }
+  ],
+  
+  "ui": {
+    "colors": {
+      "background": [30, 90, 150],
+      "grid_line": [128, 128, 128],
+      "fog_unexplored": [192, 192, 192],
+      "fog_explored_overlay": [0, 0, 0],
+      "selection_highlight": [255, 255, 0],
+      "valid_move": [0, 255, 0],
+      "attack_range": [255, 0, 0],
+      "move_attack_range": [255, 165, 0],
+      "vision_range": [135, 206, 250],
+      "unit_status_full": [0, 255, 0],
+      "unit_status_partial": [255, 255, 0],
+      "unit_status_inactive": [128, 128, 128]
+    },
+    "fonts": {
+      "large_size": 48,
+      "medium_size": 36,
+      "small_size": 24
+    },
+    "health_bar": {
+      "height": 4,
+      "border_color": [255, 255, 255],
+      "healthy_color": [0, 255, 0],
+      "damaged_color": [255, 255, 0],
+      "critical_color": [255, 0, 0],
+      "healthy_threshold": 0.6,
+      "critical_threshold": 0.3
+    }
+  },
+  
+  "gameplay": {
+    "default_cell_size": 64,
+    "default_fog_enabled": true,
+    "default_vision_mode": "full",
+    "show_damage_numbers": false,
+    "turn_start_team": 0
+  },
+  
+  "victory_conditions": {
+    "default_type": "elimination",
+    "check_each_turn": true
+  },
+  
+  "controls": {
+    "end_turn": "SPACE",
+    "cycle_units": "TAB",
+    "toggle_damage_display": "H",
+    "toggle_fog_mode": "P",
+    "toggle_grid": "G",
+    "quit": "ESCAPE"
+  }
+}

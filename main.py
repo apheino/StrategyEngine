@@ -20,6 +20,7 @@ import sys
 import json
 from enum import Enum
 from pathlib import Path
+from config import game_config
 from constants import (
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
@@ -55,12 +56,17 @@ class GameState(Enum):
 pygame.init()
 
 # Setup display window
-# pygame.NOFRAME creates a window without title bar and borders
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
-pygame.display.set_caption("Combat Alley 2000")
+# Use configuration for window size and title
+window_width, window_height = game_config.get_window_size()
+screen = pygame.display.set_mode((window_width, window_height), pygame.NOFRAME)
+pygame.display.set_caption(game_config.get_game_name())
 
 # Clock for managing frame rate and delta time
 clock = pygame.time.Clock()
+
+# Store window dimensions for easy access
+SCREEN_WIDTH = window_width
+SCREEN_HEIGHT = window_height
 
 
 # ============================================================================
@@ -68,13 +74,13 @@ clock = pygame.time.Clock()
 # ============================================================================
 
 # Font for large text (titles, turn indicator)
-font = pygame.font.Font(None, 48)
+font = pygame.font.Font(None, game_config.get_font_size('large_size'))
 
 # Font for medium text (menu items)
-medium_font = pygame.font.Font(None, 36)
+medium_font = pygame.font.Font(None, game_config.get_font_size('medium_size'))
 
 # Font for small text (instructions, unit info)
-small_font = pygame.font.Font(None, 24)
+small_font = pygame.font.Font(None, game_config.get_font_size('small_size'))
 
 
 # ============================================================================
@@ -120,26 +126,48 @@ def get_victory_condition():
     """
     Check if player has won the current scenario
     
+    Uses team configuration to determine which teams are player-controlled.
+    Victory = all non-player teams have been eliminated.
+    
     Returns:
         bool: True if all enemy units are defeated
     """
     if not scenario:
         return False
-    enemy_units = [u for u in scenario.units if u.team == 1 and u.is_alive]
-    return len(enemy_units) == 0
+    
+    # Get all non-player controlled teams
+    enemy_team_ids = [t['id'] for t in game_config.get_teams() if not t.get('player_controlled', False)]
+    
+    # Check if all enemy teams are eliminated
+    for team_id in enemy_team_ids:
+        if any(u.team == team_id and u.is_alive for u in scenario.units):
+            return False
+    
+    return True
 
 
 def get_defeat_condition():
     """
     Check if player has lost the current scenario
     
+    Uses team configuration to determine which teams are player-controlled.
+    Defeat = all player teams have been eliminated.
+    
     Returns:
         bool: True if all player units are defeated
     """
     if not scenario:
         return False
-    player_units = [u for u in scenario.units if u.team == 0 and u.is_alive]
-    return len(player_units) == 0
+    
+    # Get all player-controlled teams
+    player_team_ids = [t['id'] for t in game_config.get_teams() if t.get('player_controlled', False)]
+    
+    # Check if all player teams are eliminated
+    for team_id in player_team_ids:
+        if any(u.team == team_id and u.is_alive for u in scenario.units):
+            return False
+    
+    return True
 
 
 # ============================================================================
@@ -712,8 +740,18 @@ def draw_gameplay(fps):
     # ========================================
     
     # Turn indicator in top-left corner
-    turn_name = "Player Turn" if scenario.current_turn == 0 else "Enemy Turn"
-    turn_color = (100, 255, 100) if scenario.current_turn == 0 else (255, 100, 100)
+    current_team = game_config.get_team_config(scenario.current_turn)
+    is_player = game_config.is_player_controlled(scenario.current_turn)
+    
+    if current_team:
+        turn_name = f"{current_team['name']} Turn"
+        # Use team color with some brightness adjustment for visibility
+        base_color = current_team['color']
+        turn_color = tuple(min(255, c + 50) for c in base_color)
+    else:
+        turn_name = f"Team {scenario.current_turn} Turn"
+        turn_color = (100, 255, 100) if is_player else (255, 100, 100)
+    
     turn_text = medium_font.render(turn_name, True, turn_color)
     screen.blit(turn_text, (10, 10))
     
