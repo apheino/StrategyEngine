@@ -8,6 +8,9 @@ A graphical tool for creating and editing maps, unit placements, and scenarios f
 
 - **Visual Map Editor**: Paint terrain tiles with mouse clicks
 - **Unit Placement**: Place and configure units with team assignment
+- **Unit Type Creator**: Create new unit types directly in the editor
+- **Dynamic Unit Loading**: Automatically loads all unit types from resources/units/
+- **Terrain Mobility Display**: Shows passability info (Easy/Slow/Blocked) for each terrain
 - **Scenario Management**: Save and load complete scenarios
 - **Intuitive UI**: Three-panel interface with toolbar and status bar
 - **Grid Resizing**: Dynamic grid size adjustment
@@ -116,14 +119,21 @@ The editor uses `scenario_number` to determine which files to save/load:
 
 ## Terrain Types
 
-| # | Name | Color | Passability | Description |
-|---|------|-------|-------------|-------------|
-| 0 | Grass | Green | Easy | Standard terrain, no movement penalty |
-| 1 | Water | Blue | Blocked | Impassable, units cannot enter |
-| 2 | Mountain | Brown | Blocked | Impassable, blocks line of sight |
-| 3 | Forest | Dark Green | Slow | Slows movement, reduces visibility |
-| 4 | Sand | Tan | Easy | Desert terrain, no penalty |
-| 5 | Road | Gray | Easy | Built paths, could have bonus |
+Each terrain type displays its mobility characteristics in the editor.
+
+| # | Name | Color | Mobility | Description |
+|---|------|-------|----------|-------------|
+| 0 | Grass | Green | **Easy** | Standard terrain, no movement penalty |
+| 1 | Water | Blue | **Blocked** | Impassable, units cannot enter |
+| 2 | Mountain | Brown | **Blocked** | Impassable, blocks line of sight |
+| 3 | Forest | Dark Green | **Slow** | Slows movement, reduces visibility |
+| 4 | Sand | Tan | **Easy** | Desert terrain, no penalty |
+| 5 | Road | Gray | **Easy** | Built paths, could have bonus |
+
+**Mobility Labels:**
+- **Easy**: Normal movement cost
+- **Slow**: Increased movement cost (usually 2x)
+- **Blocked**: Cannot pass through
 
 **Note**: Terrain types are stored by passability in the map file:
 - `0` = Easy passable
@@ -132,14 +142,53 @@ The editor uses `scenario_number` to determine which files to save/load:
 
 ## Unit Types
 
-Available units (must have sprites and JSON definitions):
+The editor automatically loads all unit types from `resources/units/*.json`.
+
+### Built-in Units
 - **Soldier**: Balanced infantry
 - **Archer**: Ranged attacker
 - **Knight**: Heavy cavalry
 - **Catapult**: Siege artillery
 
+### Creating Custom Unit Types
+
+You can create new unit types directly in the editor!
+
+**Steps to create a unit:**
+
+1. Press `U` to enter Units mode
+2. Click the **"+ Create New Unit Type"** button
+3. Fill out the unit definition form:
+   - **Name**: Unit type name (lowercase, e.g., "wizard", "tank")
+   - **Health**: Maximum hit points (e.g., 100)
+   - **Attack**: Base attack power (e.g., 20)
+   - **Defense**: Damage reduction (e.g., 5)
+   - **Range**: Attack range in cells (1=melee, 2+=ranged)
+   - **Mobility**: Maximum movement per turn (e.g., 3)
+   - **Vision**: Vision range in cells (e.g., 5)
+4. Click **"Save Unit"** or press Enter through all fields
+5. The new unit type is immediately available for placement!
+
+**Form Fields (Advanced):**
+- `projectile_speed`: Speed of projectile animation (default: 15)
+- `projectile_count`: Number of projectiles fired (default: 1)
+- `projectile_sprite`: Sprite name or "null" for melee (default: "null")
+- `hit_chance`: Probability of hitting (0.0-1.0, default: 0.95)
+- `damage_std`: Damage variance (default: 2.0)
+- `fire_type`: "direct" or "indirect" (default: "direct")
+
+**Example Custom Units:**
+- **Wizard**: High attack range, low health, magic projectiles
+- **Tank**: Very high health/defense, low mobility
+- **Scout**: High mobility and vision, low combat stats
+- **Healer**: Special unit with support abilities
+
+The unit definition is saved to `resources/units/{name}.json` and can be used in the game immediately.
+
+### Unit Placement
+
 Units are placed with:
-- **Type**: What kind of unit
+- **Type**: What kind of unit (from available types)
 - **Team**: Which team controls it (uses game_config.json)
 - **Position**: Grid coordinates
 

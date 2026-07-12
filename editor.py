@@ -21,6 +21,8 @@ import sys
 import json
 from pathlib import Path
 from config import game_config
+import os
+import os
 
 # ============================================================================
 # CONSTANTS
@@ -57,12 +59,31 @@ TERRAIN_TYPES = {
     5: {"name": "Road", "color": (169, 169, 169), "passability": 0},    # Easy
 }
 
-# Unit types
-UNIT_TYPES = ["soldier", "archer", "knight", "catapult"]
+# Unit types - dynamically loaded from resources/units/
+def get_available_unit_types():
+    """Get list of available unit types from resources/units/ directory"""
+    unit_dir = Path("resources/units")
+    if not unit_dir.exists():
+        return ["soldier", "archer", "knight", "catapult"]  # Fallback
+    
+    unit_types = []
+    for file in unit_dir.glob("*.json"):
+        unit_types.append(file.stem)
+    return sorted(unit_types) if unit_types else ["soldier", "archer", "knight", "catapult"]
+
+UNIT_TYPES = get_available_unit_types()
 
 # Editor modes
 MODE_TERRAIN = "terrain"
 MODE_UNITS = "units"
+MODE_CREATE_UNIT = "create_unit"
+
+# Passability labels
+PASSABILITY_LABELS = {
+    0: "Easy",
+    1: "Slow",
+    2: "Blocked"
+}
 
 # ============================================================================
 # EDITOR CLASS
@@ -91,8 +112,14 @@ class ScenarioEditor:
         self.running = True
         self.mode = MODE_TERRAIN
         self.selected_terrain = 0
-        self.selected_unit = "soldier"
+        self.selected_unit = UNIT_TYPES[0] if UNIT_TYPES else "soldier"
         self.selected_team = 0
+        
+        # Unit creator state
+        self.creating_unit = False
+        self.unit_form_data = {}
+        self.active_input_field = None
+        self.input_text = ""
         
         # Map data
         self.map_width = 15
@@ -147,7 +174,10 @@ class ScenarioEditor:
                 self.running = False
             
             elif event.type == pygame.KEYDOWN:
-                self.handle_keypress(event.key)
+                # Check if unit creator handles this event
+                if not self.handle_unit_creator_input(event):
+                    # If not, handle normal keypresses
+                    self.handle_keypress(event.key)
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.handle_mouse_click(event.button, event.pos)
@@ -227,21 +257,31 @@ class ScenarioEditor:
                     break
         
         elif self.mode == MODE_UNITS:
-            # Unit type selection
-            start_y = TOOLBAR_HEIGHT + 40
-            for i, unit_type in enumerate(UNIT_TYPES):
-                btn_y = start_y + i * 40
-                if btn_y <= y < btn_y + 35:
-                    self.selected_unit = unit_type
-                    break
-            
-            # Team selection
-            team_y = start_y + len(UNIT_TYPES) * 40 + 20
-            for i, team in enumerate(game_config.get_teams()):
-                btn_y = team_y + i * 35
-                if btn_y <= y < btn_y + 30:
-                    self.selected_team = team['id']
-                    break
+            if self.creating_unit:
+                # Handle clicks in unit creator form
+                self.handle_unit_creator_click(x, y)
+            else:
+                # Unit type selection
+                start_y = TOOLBAR_HEIGHT + 40
+                for i, unit_type in enumerate(UNIT_TYPES):
+                    btn_y = start_y + i * 40
+                    if btn_y <= y < btn_y + 35:
+                        self.selected_unit = unit_type
+                        break
+                
+                # Create New Unit button
+                create_btn_y = start_y + len(UNIT_TYPES) * 40 + 10
+                if create_btn_y <= y < create_btn_y + 40:
+                    self.start_unit_creator()
+                    return
+                
+                # Team selection
+                team_y = create_btn_y + 50 + 40
+                for i, team in enumerate(game_config.get_teams()):
+                    btn_y = team_y + i * 35
+                    if btn_y <= y < btn_y + 30:
+                        self.selected_team = team['id']
+                        break
     
     def place_unit(self, row, col):
         """Place a unit at the specified position"""
@@ -266,6 +306,213 @@ class ScenarioEditor:
             if unit["row"] == row and unit["col"] == col:
                 return unit
         return None
+    
+    def start_unit_creator(self):
+        """Start the unit creation process"""
+        self.creating_unit = True
+        self.unit_form_data = {
+            "name": "",
+            "max_health": "100",
+            "attack_power": "20",
+            "defense": "5",
+            "attack_range": "1",
+            "max_mobility": "3",
+            "speed": "10",
+            "projectile_speed": "15",
+            "projectile_count": "1",
+            "projectile_sprite": "null",
+            "hit_chance": "0.95",
+            "damage_std": "2.0",
+            "fire_type": "direct",
+            "vision_range": "5"
+        }
+        self.active_input_field = "name"
+        print("Unit creator started. Enter unit details.")
+    
+    def draw_unit_creator(self, y_start):
+        """Draw the unit creator form"""
+        y_offset = y_start
+        
+        # Title
+        title = self.font.render("Create New Unit", True, BLACK)
+        self.screen.blit(title, (10, y_offset))
+        y_offset += 35
+        
+        # Form fields
+        fields = [
+            ("name", "Name:"),
+            ("max_health", "Health:"),
+            ("attack_power", "Attack:"),
+            ("defense", "Defense:"),
+            ("attack_range", "Range:"),
+            ("max_mobility", "Mobility:"),
+            ("vision_range", "Vision:"),
+        ]
+        
+        for field_key, field_label in fields:
+            # Field label
+            label_surf = self.small_font.render(field_label, True, BLACK)
+            self.screen.blit(label_surf, (15, y_offset))
+            
+            # Input box
+            input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+            is_active = (self.active_input_field == field_key)
+            color = YELLOW if is_active else WHITE
+            pygame.draw.rect(self.screen, color, input_rect)
+            pygame.draw.rect(self.screen, BLACK, input_rect, 1)
+            
+            # Input text
+            value = self.unit_form_data.get(field_key, "")
+            if is_active:
+                value = self.input_text
+            value_surf = self.small_font.render(str(value), True, BLACK)
+            self.screen.blit(value_surf, (123, y_offset))
+            
+            y_offset += 25
+        
+        # Save and Cancel buttons
+        y_offset += 10
+        
+        # Save button
+        save_btn = pygame.Rect(10, y_offset, 110, 30)
+        pygame.draw.rect(self.screen, GREEN, save_btn)
+        pygame.draw.rect(self.screen, BLACK, save_btn, 2)
+        save_text = self.small_font.render("Save Unit", True, BLACK)
+        self.screen.blit(save_text, (20, y_offset + 7))
+        
+        # Cancel button
+        cancel_btn = pygame.Rect(130, y_offset, 110, 30)
+        pygame.draw.rect(self.screen, RED, cancel_btn)
+        pygame.draw.rect(self.screen, BLACK, cancel_btn, 2)
+        cancel_text = self.small_font.render("Cancel", True, BLACK)
+        self.screen.blit(cancel_text, (155, y_offset + 7))
+    
+    def handle_unit_creator_click(self, x, y):
+        """Handle clicks in unit creator form"""
+        # Check field clicks
+        y_offset = TOOLBAR_HEIGHT + 45
+        fields = ["name", "max_health", "attack_power", "defense", "attack_range", "max_mobility", "vision_range"]
+        
+        for field in fields:
+            input_rect = pygame.Rect(120, y_offset - 2, 110, 20)
+            if input_rect.collidepoint(x, y):
+                self.active_input_field = field
+                self.input_text = str(self.unit_form_data.get(field, ""))
+                return
+            y_offset += 25
+        
+        # Check button clicks
+        y_offset += 10
+        
+        # Save button
+        save_btn = pygame.Rect(10, y_offset, 110, 30)
+        if save_btn.collidepoint(x, y):
+            self.save_unit_definition()
+            return
+        
+        # Cancel button
+        cancel_btn = pygame.Rect(130, y_offset, 110, 30)
+        if cancel_btn.collidepoint(x, y):
+            self.creating_unit = False
+            self.active_input_field = None
+            self.input_text = ""
+            print("Unit creation cancelled")
+    
+    def handle_unit_creator_input(self, event):
+        """Handle text input for unit creator"""
+        if not self.creating_unit or not self.active_input_field:
+            return False
+        
+        if event.key == pygame.K_RETURN or event.key == pygame.K_TAB:
+            # Save current field and move to next or save
+            self.unit_form_data[self.active_input_field] = self.input_text
+            
+            # Move to next field
+            fields = ["name", "max_health", "attack_power", "defense", "attack_range", "max_mobility", "vision_range"]
+            try:
+                current_idx = fields.index(self.active_input_field)
+                if current_idx < len(fields) - 1:
+                    self.active_input_field = fields[current_idx + 1]
+                    self.input_text = str(self.unit_form_data.get(self.active_input_field, ""))
+                else:
+                    # Last field, save unit
+                    self.save_unit_definition()
+            except ValueError:
+                pass
+            return True
+        
+        elif event.key == pygame.K_BACKSPACE:
+            self.input_text = self.input_text[:-1]
+            return True
+        
+        elif event.key == pygame.K_ESCAPE:
+            self.creating_unit = False
+            self.active_input_field = None
+            self.input_text = ""
+            return True
+        
+        elif event.unicode and event.unicode.isprintable():
+            self.input_text += event.unicode
+            return True
+        
+        return False
+    
+    def save_unit_definition(self):
+        """Save the new unit definition to a JSON file"""
+        # Update form data with current input
+        if self.active_input_field:
+            self.unit_form_data[self.active_input_field] = self.input_text
+        
+        unit_name = self.unit_form_data.get("name", "").strip().lower()
+        if not unit_name:
+            print("Error: Unit name is required")
+            return
+        
+        # Check if unit already exists
+        unit_file = Path(f"resources/units/{unit_name}.json")
+        if unit_file.exists():
+            print(f"Warning: Unit '{unit_name}' already exists. Overwriting...")
+        
+        # Build unit definition
+        try:
+            unit_def = {
+                "max_health": int(self.unit_form_data.get("max_health", "100")),
+                "attack_power": int(self.unit_form_data.get("attack_power", "20")),
+                "defense": int(self.unit_form_data.get("defense", "5")),
+                "attack_range": int(self.unit_form_data.get("attack_range", "1")),
+                "max_mobility": int(self.unit_form_data.get("max_mobility", "3")),
+                "speed": int(self.unit_form_data.get("speed", "10")),
+                "projectile_speed": int(self.unit_form_data.get("projectile_speed", "15")),
+                "projectile_count": int(self.unit_form_data.get("projectile_count", "1")),
+                "projectile_sprite": self.unit_form_data.get("projectile_sprite", "null"),
+                "hit_chance": float(self.unit_form_data.get("hit_chance", "0.95")),
+                "damage_std": float(self.unit_form_data.get("damage_std", "2.0")),
+                "fire_type": self.unit_form_data.get("fire_type", "direct"),
+                "vision_range": int(self.unit_form_data.get("vision_range", "5"))
+            }
+        except ValueError as e:
+            print(f"Error: Invalid unit attribute values: {e}")
+            return
+        
+        # Create directory if needed
+        Path("resources/units").mkdir(parents=True, exist_ok=True)
+        
+        # Save to file
+        with open(unit_file, 'w') as f:
+            json.dump(unit_def, f, indent=2)
+        
+        print(f"Unit '{unit_name}' saved successfully!")
+        print(f"  File: {unit_file}")
+        
+        # Refresh unit types list
+        global UNIT_TYPES
+        UNIT_TYPES = get_available_unit_types()
+        self.selected_unit = unit_name
+        
+        # Exit creator mode
+        self.creating_unit = False
+        self.active_input_field = None
+        self.input_text = ""
     
     def change_grid_size(self, dw, dh):
         """Change the grid dimensions"""
@@ -463,45 +710,65 @@ class ScenarioEditor:
                 
                 # Draw terrain name
                 name_surf = self.small_font.render(terrain_info["name"], True, BLACK)
-                self.screen.blit(name_surf, (45, y_offset + 8))
+                self.screen.blit(name_surf, (45, y_offset + 4))
+                
+                # Draw passability label
+                passability = terrain_info["passability"]
+                pass_label = PASSABILITY_LABELS.get(passability, "Unknown")
+                pass_surf = self.small_font.render(f"({pass_label})", True, DARK_GRAY)
+                self.screen.blit(pass_surf, (45, y_offset + 20))
                 
                 y_offset += 40
         
         elif self.mode == MODE_UNITS:
-            # Unit type selection
-            title = self.font.render("Unit Types:", True, BLACK)
-            self.screen.blit(title, (10, y_offset))
-            y_offset += 30
-            
-            for unit_type in UNIT_TYPES:
-                btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 35)
-                is_selected = (unit_type == self.selected_unit)
-                color = YELLOW if is_selected else WHITE
-                pygame.draw.rect(self.screen, color, btn_rect)
-                pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+            if self.creating_unit:
+                # Show unit creation form
+                self.draw_unit_creator(y_offset)
+            else:
+                # Unit type selection
+                title = self.font.render("Unit Types:", True, BLACK)
+                self.screen.blit(title, (10, y_offset))
+                y_offset += 30
                 
-                name_surf = self.small_font.render(unit_type.capitalize(), True, BLACK)
-                self.screen.blit(name_surf, (15, y_offset + 8))
+                for unit_type in UNIT_TYPES:
+                    btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 35)
+                    is_selected = (unit_type == self.selected_unit)
+                    color = YELLOW if is_selected else WHITE
+                    pygame.draw.rect(self.screen, color, btn_rect)
+                    pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+                    
+                    name_surf = self.small_font.render(unit_type.capitalize(), True, BLACK)
+                    self.screen.blit(name_surf, (15, y_offset + 8))
+                    
+                    y_offset += 40
                 
-                y_offset += 40
-            
-            # Team selection
-            y_offset += 10
-            team_title = self.font.render("Team:", True, BLACK)
-            self.screen.blit(team_title, (10, y_offset))
-            y_offset += 30
-            
-            for team in game_config.get_teams():
-                btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 30)
-                is_selected = (team['id'] == self.selected_team)
-                color = YELLOW if is_selected else tuple(team['color'])
-                pygame.draw.rect(self.screen, color, btn_rect)
-                pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+                # Create New Unit button
+                y_offset += 10
+                create_btn = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 40)
+                pygame.draw.rect(self.screen, GREEN, create_btn)
+                pygame.draw.rect(self.screen, BLACK, create_btn, 2)
+                create_text = self.small_font.render("+ Create New Unit Type", True, BLACK)
+                text_rect = create_text.get_rect(center=create_btn.center)
+                self.screen.blit(create_text, text_rect)
+                y_offset += 50
                 
-                name_surf = self.small_font.render(team['name'], True, BLACK)
-                self.screen.blit(name_surf, (15, y_offset + 6))
+                # Team selection
+                y_offset += 10
+                team_title = self.font.render("Team:", True, BLACK)
+                self.screen.blit(team_title, (10, y_offset))
+                y_offset += 30
                 
-                y_offset += 35
+                for team in game_config.get_teams():
+                    btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 30)
+                    is_selected = (team['id'] == self.selected_team)
+                    color = YELLOW if is_selected else tuple(team['color'])
+                    pygame.draw.rect(self.screen, color, btn_rect)
+                    pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+                    
+                    name_surf = self.small_font.render(team['name'], True, BLACK)
+                    self.screen.blit(name_surf, (15, y_offset + 6))
+                    
+                    y_offset += 35
     
     def draw_grid(self):
         """Draw the main editing grid"""
