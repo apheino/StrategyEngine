@@ -183,8 +183,16 @@ class ScenarioEditor:
         
         # UI state
         self.dragging = False
-        self.offset_x = 0
-        self.offset_y = 0
+        self.panning = False
+        self.pan_start_x = 0
+        self.pan_start_y = 0
+        
+        # Camera/viewport state for zoom and pan
+        self.zoom_level = 1.0  # 1.0 = 100%, 0.5 = 50%, 2.0 = 200%
+        self.camera_x = 0  # Camera offset in pixels
+        self.camera_y = 0
+        self.min_zoom = 0.1
+        self.max_zoom = 3.0
         
         # Calculate grid area
         self.grid_x = PANEL_WIDTH
@@ -197,6 +205,10 @@ class ScenarioEditor:
         print("  Left Panel: Select terrain/unit type")
         print("  Click on grid: Place terrain/unit")
         print("  Right-click: Erase")
+        print("  Middle-click drag: Pan camera")
+        print("  Mouse wheel: Zoom in/out")
+        print("  Arrow keys: Pan camera")
+        print("  R: Reset camera view")
         print("  T: Terrain mode")
         print("  U: Units mode")
         print("  S: Save scenario")
@@ -233,14 +245,35 @@ class ScenarioEditor:
                         self.handle_keypress(event.key)
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.handle_mouse_click(event.button, event.pos)
+                if event.button == 2:  # Middle mouse button
+                    self.panning = True
+                    self.pan_start_x = event.pos[0]
+                    self.pan_start_y = event.pos[1]
+                else:
+                    self.handle_mouse_click(event.button, event.pos)
             
             elif event.type == pygame.MOUSEBUTTONUP:
                 self.dragging = False
+                if event.button == 2:  # Middle mouse button
+                    self.panning = False
             
             elif event.type == pygame.MOUSEMOTION:
-                if self.dragging:
+                if self.panning:
+                    dx = event.pos[0] - self.pan_start_x
+                    dy = event.pos[1] - self.pan_start_y
+                    self.camera_x += dx
+                    self.camera_y += dy
+                    self.pan_start_x = event.pos[0]
+                    self.pan_start_y = event.pos[1]
+                elif self.dragging:
                     self.handle_mouse_drag(event.pos)
+            
+            elif event.type == pygame.MOUSEWHEEL:
+                # Zoom with mouse wheel
+                if event.y > 0:  # Scroll up = zoom in
+                    self.zoom_in()
+                elif event.y < 0:  # Scroll down = zoom out
+                    self.zoom_out()
     
     def handle_keypress(self, key):
         """Handle keyboard input"""
@@ -266,6 +299,16 @@ class ScenarioEditor:
             self.change_scenario(-1)
         elif key == pygame.K_RIGHTBRACKET:  # ] key
             self.change_scenario(1)
+        elif key == pygame.K_UP:
+            self.camera_y += 50
+        elif key == pygame.K_DOWN:
+            self.camera_y -= 50
+        elif key == pygame.K_LEFT:
+            self.camera_x += 50
+        elif key == pygame.K_RIGHT:
+            self.camera_x -= 50
+        elif key == pygame.K_r:  # Reset camera
+            self.reset_camera()
         elif pygame.K_1 <= key <= pygame.K_6:
             terrain_id = key - pygame.K_1
             if terrain_id < len(TERRAIN_TYPES):
@@ -284,9 +327,10 @@ class ScenarioEditor:
         if self.grid_x <= x < self.grid_x + self.grid_width and \
            self.grid_y <= y < self.grid_y + self.grid_height:
             
-            # Convert to grid coordinates
-            grid_x = (x - self.grid_x) // CELL_SIZE
-            grid_y = (y - self.grid_y) // CELL_SIZE
+            # Convert to grid coordinates with camera transform
+            cell_size = CELL_SIZE * self.zoom_level
+            grid_x = int((x - self.grid_x - self.camera_x) / cell_size)
+            grid_y = int((y - self.grid_y - self.camera_y) / cell_size)
             
             if 0 <= grid_x < self.map_width and 0 <= grid_y < self.map_height:
                 if button == 1:  # Left click
@@ -333,6 +377,45 @@ class ScenarioEditor:
                 self.map_data = [[0 for _ in range(self.map_width)] for _ in range(self.map_height)]
                 self.units = []
                 self.scenario_description = "New scenario"
+                # Reset camera when loading new scenario
+                self.reset_camera()
+    
+    def zoom_in(self):
+        """Zoom in (increase zoom level)"""
+        old_zoom = self.zoom_level
+        self.zoom_level = min(self.max_zoom, self.zoom_level * 1.1)
+        # Adjust camera to zoom toward center
+        zoom_ratio = self.zoom_level / old_zoom
+        center_x = self.grid_width / 2
+        center_y = self.grid_height / 2
+        self.camera_x = (self.camera_x - center_x) * zoom_ratio + center_x
+        self.camera_y = (self.camera_y - center_y) * zoom_ratio + center_y
+    
+    def zoom_out(self):
+        """Zoom out (decrease zoom level)"""
+        old_zoom = self.zoom_level
+        self.zoom_level = max(self.min_zoom, self.zoom_level / 1.1)
+        # Adjust camera to zoom toward center
+        zoom_ratio = self.zoom_level / old_zoom
+        center_x = self.grid_width / 2
+        center_y = self.grid_height / 2
+        self.camera_x = (self.camera_x - center_x) * zoom_ratio + center_x
+        self.camera_y = (self.camera_y - center_y) * zoom_ratio + center_y
+    
+    def reset_camera(self):
+        """Reset camera to default position (centered and fit to view)"""
+        # Calculate zoom to fit entire map in view
+        zoom_x = self.grid_width / (self.map_width * CELL_SIZE)
+        zoom_y = self.grid_height / (self.map_height * CELL_SIZE)
+        self.zoom_level = min(zoom_x, zoom_y, 1.0)  # Don't zoom in beyond 100%
+        
+        # Center the map
+        map_width_scaled = self.map_width * CELL_SIZE * self.zoom_level
+        map_height_scaled = self.map_height * CELL_SIZE * self.zoom_level
+        self.camera_x = (self.grid_width - map_width_scaled) / 2
+        self.camera_y = (self.grid_height - map_height_scaled) / 2
+        
+        print(f"Camera reset: zoom={int(self.zoom_level * 100)}%, centered")
     
     def handle_mouse_drag(self, pos):
         """Handle mouse dragging"""
@@ -1154,6 +1237,9 @@ class ScenarioEditor:
             print(f"  Units loaded: {len(self.units)}")
         else:
             print(f"Units file not found: {units_file}")
+        
+        # Reset camera to fit loaded map
+        self.reset_camera()
     
     def update(self):
         """Update editor state"""
@@ -1336,49 +1422,77 @@ class ScenarioEditor:
                     y_offset += 35
     
     def draw_grid(self):
-        """Draw the main editing grid"""
-        # Grid background
-        grid_rect = pygame.Rect(self.grid_x, self.grid_y, 
-                               self.map_width * CELL_SIZE, self.map_height * CELL_SIZE)
-        pygame.draw.rect(self.screen, WHITE, grid_rect)
+        """Draw the main editing grid with zoom and pan support"""
+        # Clip drawing to grid area
+        clip_rect = pygame.Rect(self.grid_x, self.grid_y, self.grid_width, self.grid_height)
+        self.screen.set_clip(clip_rect)
         
-        # Draw terrain
-        for y in range(self.map_height):
-            for x in range(self.map_width):
-                terrain_id = self.map_data[y][x]
-                terrain_info = TERRAIN_TYPES[terrain_id]
-                
-                cell_rect = pygame.Rect(
-                    self.grid_x + x * CELL_SIZE,
-                    self.grid_y + y * CELL_SIZE,
-                    CELL_SIZE, CELL_SIZE
-                )
-                pygame.draw.rect(self.screen, terrain_info["color"], cell_rect)
-                pygame.draw.rect(self.screen, DARK_GRAY, cell_rect, 1)
+        # Fill background
+        pygame.draw.rect(self.screen, WHITE, clip_rect)
+        
+        # Calculate cell size with zoom
+        cell_size = CELL_SIZE * self.zoom_level
+        
+        # Calculate visible range (only draw what's on screen)
+        start_x = max(0, int(-self.camera_x / cell_size) - 1)
+        start_y = max(0, int(-self.camera_y / cell_size) - 1)
+        end_x = min(self.map_width, int((self.grid_width - self.camera_x) / cell_size) + 2)
+        end_y = min(self.map_height, int((self.grid_height - self.camera_y) / cell_size) + 2)
+        
+        # Draw terrain (only visible cells)
+        for y in range(start_y, end_y):
+            for x in range(start_x, end_x):
+                if y < len(self.map_data) and x < len(self.map_data[y]):
+                    terrain_id = self.map_data[y][x]
+                    terrain_info = TERRAIN_TYPES.get(terrain_id, TERRAIN_TYPES[0])
+                    
+                    screen_x = self.grid_x + x * cell_size + self.camera_x
+                    screen_y = self.grid_y + y * cell_size + self.camera_y
+                    
+                    cell_rect = pygame.Rect(screen_x, screen_y, cell_size, cell_size)
+                    pygame.draw.rect(self.screen, terrain_info["color"], cell_rect)
+                    
+                    # Draw grid lines if zoomed in enough
+                    if cell_size >= 10:
+                        pygame.draw.rect(self.screen, DARK_GRAY, cell_rect, 1)
         
         # Draw units
         for unit in self.units:
-            x = self.grid_x + unit["col"] * CELL_SIZE
-            y = self.grid_y + unit["row"] * CELL_SIZE
+            screen_x = self.grid_x + unit["col"] * cell_size + self.camera_x
+            screen_y = self.grid_y + unit["row"] * cell_size + self.camera_y
             
-            # Get team color
-            team_config = game_config.get_team_config(unit["team"])
-            team_color = tuple(team_config["color"]) if team_config else GRAY
-            
-            # Draw unit circle
-            center_x = x + CELL_SIZE // 2
-            center_y = y + CELL_SIZE // 2
-            pygame.draw.circle(self.screen, team_color, (center_x, center_y), CELL_SIZE // 3)
-            pygame.draw.circle(self.screen, BLACK, (center_x, center_y), CELL_SIZE // 3, 2)
-            
-            # Draw unit type letter
-            letter = unit["type"][0].upper()
-            text_surf = self.small_font.render(letter, True, BLACK)
-            text_rect = text_surf.get_rect(center=(center_x, center_y))
-            self.screen.blit(text_surf, text_rect)
+            # Only draw if visible
+            if (screen_x + cell_size >= self.grid_x and screen_x < self.grid_x + self.grid_width and
+                screen_y + cell_size >= self.grid_y and screen_y < self.grid_y + self.grid_height):
+                
+                # Get team color
+                team_config = game_config.get_team_config(unit["team"])
+                team_color = tuple(team_config["color"]) if team_config else GRAY
+                
+                # Draw unit circle
+                center_x = int(screen_x + cell_size / 2)
+                center_y = int(screen_y + cell_size / 2)
+                radius = max(3, int(cell_size / 3))
+                pygame.draw.circle(self.screen, team_color, (center_x, center_y), radius)
+                pygame.draw.circle(self.screen, BLACK, (center_x, center_y), radius, max(1, int(radius / 5)))
+                
+                # Draw unit type letter if zoomed in enough
+                if cell_size >= 15:
+                    letter = unit["type"][0].upper()
+                    text_surf = self.small_font.render(letter, True, BLACK)
+                    text_rect = text_surf.get_rect(center=(center_x, center_y))
+                    self.screen.blit(text_surf, text_rect)
         
-        # Draw grid border
-        pygame.draw.rect(self.screen, BLACK, grid_rect, 3)
+        # Draw border
+        pygame.draw.rect(self.screen, BLACK, clip_rect, 2)
+        
+        # Clear clipping
+        self.screen.set_clip(None)
+        
+        # Draw zoom indicator
+        zoom_text = f"Zoom: {int(self.zoom_level * 100)}%"
+        zoom_surf = self.small_font.render(zoom_text, True, BLACK)
+        self.screen.blit(zoom_surf, (self.grid_x + 5, self.grid_y + self.grid_height - 20))
     
     def draw_right_panel(self):
         """Draw the right info panel"""
@@ -1401,10 +1515,12 @@ class ScenarioEditor:
             "S - Save scenario",
             "L - Load scenario",
             "N - New scenario",
-            "+/- - Grid size",
-            "1-6 - Quick terrain",
-            "Left Click - Place",
-            "Right Click - Erase",
+            "Wheel - Zoom",
+            "Middle - Pan",
+            "Arrows - Pan",
+            "R - Reset view",
+            "Left - Place",
+            "Right - Erase",
             "Q - Quit"
         ]
         
