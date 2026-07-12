@@ -317,17 +317,22 @@ class ScenarioEditor:
             self.change_scenario(1)
     
     def change_scenario(self, delta):
-        """Change the active scenario number"""
+        """Change the active scenario number and auto-load if exists"""
         new_number = max(1, min(99, self.scenario_number + delta))
         if new_number != self.scenario_number:
             self.scenario_number = new_number
             print(f"Switched to scenario {self.scenario_number}")
-            # Check if scenario exists
+            # Check if scenario exists and auto-load
             map_file = Path(f"resources/maps/map_{self.scenario_number}.txt")
             if map_file.exists():
-                print(f"  ⚠ Scenario {self.scenario_number} already exists - use 'L' to load or 'S' to overwrite")
+                print(f"  → Scenario exists, loading automatically...")
+                self.load_scenario()
             else:
-                print(f"  New scenario - use 'S' to save")
+                print(f"  → New scenario - build your map and press 'S' to save")
+                # Clear map and units for new scenario
+                self.map_data = [[0 for _ in range(self.map_width)] for _ in range(self.map_height)]
+                self.units = []
+                self.scenario_description = "New scenario"
     
     def handle_mouse_drag(self, pos):
         """Handle mouse dragging"""
@@ -1053,7 +1058,7 @@ class ScenarioEditor:
         print(f"  Units placed: {len(self.units)}")
     
     def load_scenario(self):
-        """Load a scenario from files"""
+        """Load a scenario from files (supports both old and new formats)"""
         map_file = f"resources/maps/map_{self.scenario_number}.txt"
         units_file = f"resources/maps/units_{self.scenario_number}.json"
         
@@ -1061,27 +1066,70 @@ class ScenarioEditor:
         if Path(map_file).exists():
             with open(map_file, 'r') as f:
                 lines = f.readlines()
-                height, width = map(int, lines[0].strip().split())
                 
-                self.map_height = height
-                self.map_width = width
-                self.map_data = []
+                # Skip comment lines and empty lines
+                data_lines = [line.strip() for line in lines if line.strip() and not line.strip().startswith('#')]
                 
-                for i in range(1, height + 1):
-                    row_data = list(map(int, lines[i].strip().split()))
-                    # Convert passability back to terrain type (simple mapping)
-                    terrain_row = []
-                    for passability in row_data:
-                        # Find first terrain with matching passability
-                        terrain_id = 0
-                        for tid, tinfo in TERRAIN_TYPES.items():
-                            if tinfo["passability"] == passability:
-                                terrain_id = tid
-                                break
-                        terrain_row.append(terrain_id)
-                    self.map_data.append(terrain_row)
-            
-            print(f"Loaded map from {map_file}")
+                if not data_lines:
+                    print(f"No map data found in {map_file}")
+                    return
+                
+                # Detect format: new format has "height width" on first line, old format has comma-separated values
+                first_line = data_lines[0]
+                
+                if ',' in first_line:
+                    # Old format: comma-separated icon,passability pairs
+                    self.map_data = []
+                    for line in data_lines:
+                        row_data = []
+                        cells = line.split()
+                        for cell in cells:
+                            if ',' in cell:
+                                icon_str, pass_str = cell.split(',')
+                                passability = int(pass_str)
+                            else:
+                                # Fallback if no comma
+                                passability = int(cell)
+                            
+                            # Find terrain with matching passability
+                            terrain_id = 0
+                            for tid, tinfo in TERRAIN_TYPES.items():
+                                if tinfo["passability"] == passability:
+                                    terrain_id = tid
+                                    break
+                            row_data.append(terrain_id)
+                        self.map_data.append(row_data)
+                    
+                    # Infer dimensions from data
+                    self.map_height = len(self.map_data)
+                    self.map_width = len(self.map_data[0]) if self.map_data else 0
+                    print(f"Loaded map from {map_file} (old format)")
+                    
+                else:
+                    # New format: height width on first line, then space-separated passability values
+                    height, width = map(int, first_line.split())
+                    
+                    self.map_height = height
+                    self.map_width = width
+                    self.map_data = []
+                    
+                    for i in range(1, min(height + 1, len(data_lines))):
+                        row_data = list(map(int, data_lines[i].split()))
+                        # Convert passability back to terrain type
+                        terrain_row = []
+                        for passability in row_data:
+                            # Find first terrain with matching passability
+                            terrain_id = 0
+                            for tid, tinfo in TERRAIN_TYPES.items():
+                                if tinfo["passability"] == passability:
+                                    terrain_id = tid
+                                    break
+                            terrain_row.append(terrain_id)
+                        self.map_data.append(terrain_row)
+                    
+                    print(f"Loaded map from {map_file} (new format)")
+                
+                print(f"  Grid: {self.map_width}x{self.map_height}")
         else:
             print(f"Map file not found: {map_file}")
         
