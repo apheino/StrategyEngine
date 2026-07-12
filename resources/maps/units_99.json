@@ -1,0 +1,40 @@
+{
+  "scenario": 99,
+  "description": "New scenario",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue Alliance",
+      "description": "Player-controlled forces",
+      "units": [
+        {
+          "type": "archer",
+          "row": 2,
+          "col": 3
+        },
+        {
+          "type": "soldier",
+          "row": 4,
+          "col": 5
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red Empire",
+      "description": "Enemy forces",
+      "units": [
+        {
+          "type": "archer",
+          "row": 7,
+          "col": 10
+        },
+        {
+          "type": "soldier",
+          "row": 8,
+          "col": 12
+        }
+      ]
+    }
+  ]
+}

@@ -1092,16 +1092,28 @@ class ScenarioEditor:
         print("New scenario created")
     
     def save_scenario(self):
-        """Save the current scenario to files"""
+        """Save the current scenario to files in game-compatible format"""
         # Create resources directories if they don't exist
         Path("resources/maps").mkdir(parents=True, exist_ok=True)
         
-        # Save map file
+        # Save map file in original game format (icon,passability pairs)
         map_file = f"resources/maps/map_{self.scenario_number}.txt"
         with open(map_file, 'w') as f:
-            f.write(f"{self.map_height} {self.map_width}\n")
+            # Write comment header with map info
+            f.write(f"# Map {self.scenario_number}: {self.map_width}x{self.map_height}\n")
+            f.write(f"# Format: icon_id,passability (0=easy, 1=slow, 2=blocked)\n")
+            f.write(f"#\n")
+            
+            # Write map data in game format: icon,passability
             for row in self.map_data:
-                f.write(" ".join(str(TERRAIN_TYPES[cell]["passability"]) for cell in row) + "\n")
+                cells = []
+                for terrain_id in row:
+                    terrain_info = TERRAIN_TYPES.get(terrain_id, TERRAIN_TYPES[0])
+                    # Use terrain_id as icon (1-based for compatibility)
+                    icon_id = terrain_id + 1
+                    passability = terrain_info["passability"]
+                    cells.append(f"{icon_id},{passability}")
+                f.write(" ".join(cells) + "\n")
         
         # Save units file
         units_file = f"resources/maps/units_{self.scenario_number}.json"
