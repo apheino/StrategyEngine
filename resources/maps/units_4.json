@@ -1,0 +1,28 @@
+{
+  "scenario": 4,
+  "description": "Structure test scenario",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue Alliance",
+      "description": "Player forces",
+      "units": [
+        {"type": "soldier", "row": 2, "col": 2},
+        {"type": "archer", "row": 3, "col": 2}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red Legion",
+      "description": "Enemy forces",
+      "units": [
+        {"type": "soldier", "row": 7, "col": 12}
+      ]
+    }
+  ],
+  "structures": [
+    {"type": "headquarters", "row": 1, "col": 12, "team": 1},
+    {"type": "hangar", "row": 5, "col": 7, "team": 1},
+    {"type": "sandbag", "row": 4, "col": 5, "team": null}
+  ]
+}

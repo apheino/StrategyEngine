@@ -1,0 +1,6 @@
+{
+  "max_health": 100,
+  "defense": 5,
+  "is_base": false,
+  "description": "Sandbag fortification. Provides light cover and defensive position for units."
+}

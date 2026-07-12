@@ -24,6 +24,7 @@ from config import game_config
 from grid import Grid, PASSABLE_EASY, PASSABLE_SLOW, PASSABLE_BLOCKED
 from unit import Unit
 from projectile import Projectile
+from structure import Structure
 
 
 class Scenario:
@@ -72,6 +73,13 @@ class Scenario:
         if units_file is None:
             units_file = f"units_{scenario_number}.json"
         self.units = self.load_units(units_file)
+        
+        # ========================================
+        # LOAD STRUCTURES
+        # ========================================
+        
+        # Load structure placement from file (if exists)
+        self.structures = self.load_structures(units_file)
         
         # ========================================
         # PLAYER INTERACTION STATE
@@ -204,6 +212,72 @@ class Scenario:
         
         return units
     
+    def load_structures(self, units_file):
+        """
+        Load structure positions and types from JSON file
+        
+        Structures are defined in the same file as units, under a "structures" key.
+        File format (JSON):
+        {
+            "scenario": 1,
+            "structures": [
+                {"type": "headquarters", "row": 2, "col": 5, "team": 0},
+                {"type": "sandbag", "row": 4, "col": 8, "team": null},
+                ...
+            ]
+        }
+        
+        Args:
+            units_file (str): Filename (will look in resources/maps/)
+        
+        Returns:
+            list: List of Structure objects
+        """
+        structures = []
+        
+        # If units_file is just a filename, prepend resources/maps/
+        if not os.path.dirname(units_file):
+            units_file = f"resources/maps/{units_file}"
+        
+        if not os.path.exists(units_file):
+            return structures
+        
+        try:
+            with open(units_file, 'r') as f:
+                data = json.load(f)
+            
+            # Parse structures (optional field)
+            structure_data = data.get('structures', [])
+            
+            for struct in structure_data:
+                structure_type = struct.get('type')
+                row = struct.get('row')
+                col = struct.get('col')
+                team = struct.get('team')  # Can be None for neutral
+                
+                # Validate required fields
+                if structure_type is None or row is None or col is None:
+                    print(f"Warning: Invalid structure data: {struct}")
+                    continue
+                
+                # Validate position is within map bounds
+                if row < 0 or row >= self.grid.grid_height or col < 0 or col >= self.grid.grid_width:
+                    print(f"Warning: Structure position ({row},{col}) out of bounds")
+                    continue
+                
+                # Create structure
+                structure = Structure(structure_type=structure_type, row=row, col=col, 
+                                    team=team, cell_size=self.cell_size)
+                structures.append(structure)
+            
+            if structures:
+                print(f"Loaded {len(structures)} structures from {units_file}")
+        
+        except Exception as e:
+            print(f"Error loading structures from {units_file}: {e}")
+        
+        return structures
+    
     def get_unit_at(self, row, col):
         """
         Get unit at a specific grid position
@@ -237,6 +311,36 @@ class Scenario:
             list: List of Unit objects belonging to this team
         """
         return [unit for unit in self.units if unit.team == team and unit.is_alive]
+    
+    def get_structure_at(self, row, col):
+        """
+        Get structure at a specific grid position
+        
+        Only returns alive structures.
+        
+        Args:
+            row (int): Grid row coordinate
+            col (int): Grid column coordinate
+        
+        Returns:
+            Structure: Structure object at this position, or None if empty/destroyed
+        """
+        for structure in self.structures:
+            if structure.row == row and structure.col == col and structure.is_alive:
+                return structure
+        return None
+    
+    def get_structures_by_team(self, team):
+        """
+        Get all alive structures belonging to a specific team
+        
+        Args:
+            team (int): Team number (None = neutral)
+        
+        Returns:
+            list: List of Structure objects belonging to this team
+        """
+        return [s for s in self.structures if s.team == team and s.is_alive]
     
     def calculate_visible_cells(self):
         """
@@ -484,6 +588,50 @@ class Scenario:
                 
                 # Draw unit
                 unit.draw(screen, x, y, scaled_cell_size)
+    
+    def draw_structures(self, screen):
+        """
+        Draw all alive structures with their health bars
+        
+        Structures are static and drawn at their grid positions.
+        Converts grid coordinates to screen coordinates accounting for camera offset and zoom.
+        
+        Args:
+            screen (pygame.Surface): Surface to draw on
+        """
+        screen_width = screen.get_width()
+        screen_height = screen.get_height()
+        
+        # Calculate grid dimensions (same logic as grid.draw)
+        grid_world_width, grid_world_height = self.grid.get_grid_world_size()
+        scaled_cell_size = self.grid.cell_size * self.grid.zoom
+        scaled_grid_width = grid_world_width * self.grid.zoom
+        scaled_grid_height = grid_world_height * self.grid.zoom
+        
+        # Calculate centered position
+        center_x = (screen_width - scaled_grid_width) / 2 + self.grid.offset_x
+        center_y = (screen_height - scaled_grid_height) / 2 + self.grid.offset_y
+        
+        # Draw each structure
+        for structure in self.structures:
+            if structure.is_alive:
+                row, col = structure.row, structure.col
+                
+                # Only draw enemy structures if visible or show_all_map enabled
+                if structure.team not in [None, 0]:  # Enemy or neutral structure
+                    if not self.show_all_map and (row, col) not in self.visible_cells:
+                        continue  # Skip drawing
+                
+                # Calculate screen position
+                x = center_x + col * scaled_cell_size
+                y = center_y + row * scaled_cell_size
+                
+                # Draw structure using its draw method
+                # (structures have their own draw method that handles sprite and health bar)
+                # We need to convert to cell-based coordinates
+                camera_x = -center_x
+                camera_y = -center_y
+                structure.draw(screen, camera_x, camera_y, self.grid.zoom)
     
     def draw_projectiles(self, screen):
         """
@@ -1065,6 +1213,7 @@ class Scenario:
         
         Returns the passability constant for the terrain at this position.
         Out-of-bounds positions are considered blocked.
+        Also checks for structures - alive structures block movement.
         
         Args:
             row (int): Grid row coordinate
@@ -1074,6 +1223,11 @@ class Scenario:
             int: PASSABLE_EASY (0), PASSABLE_SLOW (1), or PASSABLE_BLOCKED (2)
         """
         if row < 0 or row >= self.grid.grid_height or col < 0 or col >= self.grid.grid_width:
+            return PASSABLE_BLOCKED
+        
+        # Check if there's an alive structure blocking this cell
+        structure = self.get_structure_at(row, col)
+        if structure and structure.is_alive:
             return PASSABLE_BLOCKED
         
         if 0 <= row < len(self.grid.map_data) and 0 <= col < len(self.grid.map_data[row]):
@@ -1242,7 +1396,7 @@ class Scenario:
         """
         Calculate all valid attack targets for a unit
         
-        Checks all enemy units and determines which are within attack range.
+        Checks all enemy units and structures, determines which are within attack range.
         For direct fire units, also checks line of sight.
         Indirect fire units can shoot over obstacles.
         
@@ -1250,7 +1404,7 @@ class Scenario:
             unit (Unit): Unit to calculate attacks for
         
         Returns:
-            list: List of enemy Unit objects that can be attacked
+            list: List of enemy Unit objects and Structure objects that can be attacked
         """
         if not unit or not unit.is_alive or not unit.is_active:
             return []
@@ -1280,11 +1434,32 @@ class Scenario:
                     # Indirect fire can shoot over obstacles
                     valid_attacks.append(enemy)
         
+        # Check all enemy structures
+        for structure in self.structures:
+            # Skip if same team, neutral (None), or destroyed
+            if structure.team == unit.team or structure.team is None or not structure.is_alive:
+                continue
+            
+            struct_row, struct_col = structure.row, structure.col
+            
+            # Calculate Manhattan distance to structure
+            distance = abs(struct_row - start_row) + abs(struct_col - start_col)
+            
+            # Check if within attack range
+            if distance <= unit.attack_range:
+                # For direct fire, check line of sight
+                if unit.fire_type == 'direct':
+                    if self.has_line_of_sight(unit.position, (struct_row, struct_col)):
+                        valid_attacks.append(structure)
+                else:
+                    # Indirect fire can shoot over obstacles
+                    valid_attacks.append(structure)
+        
         return valid_attacks
     
     def attempt_attack(self, row, col):
         """
-        Attempt to attack an enemy at the given position
+        Attempt to attack an enemy unit or structure at the given position
         
         Validates that target is an enemy within range, then executes the attack.
         Creates projectile for ranged attacks, applies immediate damage for melee.
@@ -1303,7 +1478,41 @@ class Scenario:
         # Check if there's an enemy unit at the target position
         target = self.get_unit_at(row, col)
         
+        # If no unit, check for structure
+        if not target:
+            target = self.get_structure_at(row, col)
+        
         if target and target in self.valid_attacks:
+            # Check if target is a structure
+            is_structure = isinstance(target, Structure)
+            
+            if is_structure:
+                # Attack structure directly (structures don't dodge)
+                import random
+                import numpy as np
+                
+                # Calculate damage with Gaussian variation
+                base_damage = self.selected_unit.attack_power
+                damage_std = self.selected_unit.damage_std if hasattr(self.selected_unit, 'damage_std') else base_damage * 0.2
+                actual_damage = int(np.random.normal(base_damage, damage_std))
+                actual_damage = max(1, actual_damage)  # Minimum 1 damage
+                
+                # Apply damage to structure
+                damage_dealt = target.take_damage(actual_damage)
+                
+                print(f"{self.selected_unit.unit_type} attacked {target.type} for {damage_dealt} damage (HP: {target.health}/{target.max_health})")
+                
+                # Check if destroyed
+                if not target.is_alive:
+                    print(f"{target.type} destroyed!")
+                
+                # No projectiles for structure attacks (instant hit)
+                # Mark unit as inactive after attacking
+                self.selected_unit.is_active = False
+                self.deselect_unit()
+                return True
+            
+            # Original unit attack code
             # Perform the attack
             attack_info = self.selected_unit.attack(target)
             

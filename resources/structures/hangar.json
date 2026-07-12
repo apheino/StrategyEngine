@@ -1,0 +1,6 @@
+{
+  "max_health": 300,
+  "defense": 15,
+  "is_base": false,
+  "description": "Vehicle hangar. Provides storage and repair facilities for military vehicles."
+}

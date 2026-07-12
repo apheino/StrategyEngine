@@ -725,6 +725,9 @@ def draw_gameplay(fps):
     # Draw selection highlights (green for valid moves, red for valid attacks)
     scenario.draw_selection_highlights(screen)
     
+    # Draw all structures with their health bars
+    scenario.draw_structures(screen)
+    
     # Draw all units with their animations and health bars
     scenario.draw_units(screen)
     

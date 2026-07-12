@@ -1,0 +1,6 @@
+{
+  "max_health": 500,
+  "defense": 20,
+  "is_base": true,
+  "description": "Team headquarters. Heavily fortified command center that serves as the team's main base of operations."
+}

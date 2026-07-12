@@ -115,9 +115,24 @@ def get_available_unit_types():
 
 UNIT_TYPES = get_available_unit_types()
 
+# Structure types - dynamically loaded from resources/structures/
+def get_available_structure_types():
+    """Get list of available structure types from resources/structures/ directory"""
+    struct_dir = Path("resources/structures")
+    if not struct_dir.exists():
+        return ["headquarters", "hangar", "sandbag"]  # Fallback
+    
+    structure_types = []
+    for file in struct_dir.glob("*.json"):
+        structure_types.append(file.stem)
+    return sorted(structure_types) if structure_types else ["headquarters", "hangar", "sandbag"]
+
+STRUCTURE_TYPES = get_available_structure_types()
+
 # Editor modes
 MODE_TERRAIN = "terrain"
 MODE_UNITS = "units"
+MODE_STRUCTURES = "structures"
 MODE_CREATE_UNIT = "create_unit"
 MODE_CREATE_TERRAIN = "create_terrain"
 
@@ -176,6 +191,11 @@ class ScenarioEditor:
         self.map_height = 10
         self.map_data = [[0 for _ in range(self.map_width)] for _ in range(self.map_height)]
         self.units = []  # List of {"type": str, "team": int, "row": int, "col": int}
+        self.structures = []  # List of {"type": str, "team": int|None, "row": int, "col": int}
+        
+        # Structure selection state
+        self.selected_structure = STRUCTURE_TYPES[0] if STRUCTURE_TYPES else "headquarters"
+        self.structure_team = 0  # Team ownership for structures (None = neutral)
         
         # Scenario metadata
         self.scenario_number = 1
@@ -285,6 +305,8 @@ class ScenarioEditor:
         elif key == pygame.K_u:
             self.mode = MODE_UNITS
             self.creating_unit = False
+        elif key == pygame.K_r:
+            self.mode = MODE_STRUCTURES
         elif key == pygame.K_s:
             self.save_scenario()
         elif key == pygame.K_l:
@@ -338,11 +360,15 @@ class ScenarioEditor:
                         self.map_data[grid_y][grid_x] = self.selected_terrain
                     elif self.mode == MODE_UNITS:
                         self.place_unit(grid_y, grid_x)
+                    elif self.mode == MODE_STRUCTURES:
+                        self.place_structure(grid_y, grid_x)
                 elif button == 3:  # Right click
                     if self.mode == MODE_TERRAIN:
                         self.map_data[grid_y][grid_x] = 0  # Reset to grass
                     elif self.mode == MODE_UNITS:
                         self.remove_unit(grid_y, grid_x)
+                    elif self.mode == MODE_STRUCTURES:
+                        self.remove_structure(grid_y, grid_x)
         
         # Check if clicking in left panel (terrain/unit selection)
         elif x < PANEL_WIDTH:
@@ -376,6 +402,7 @@ class ScenarioEditor:
                 # Clear map and units for new scenario
                 self.map_data = [[0 for _ in range(self.map_width)] for _ in range(self.map_height)]
                 self.units = []
+                self.structures = []
                 self.scenario_description = "New scenario"
                 # Reset camera when loading new scenario
                 self.reset_camera()
@@ -483,6 +510,24 @@ class ScenarioEditor:
                     if btn_y <= y < btn_y + 30:
                         self.selected_team = team['id']
                         break
+        
+        elif self.mode == MODE_STRUCTURES:
+            # Structure type selection
+            start_y = TOOLBAR_HEIGHT + 40
+            for i, struct_type in enumerate(STRUCTURE_TYPES):
+                btn_y = start_y + i * 40
+                if btn_y <= y < btn_y + 35:
+                    self.selected_structure = struct_type
+                    break
+            
+            # Team selection (including neutral option)
+            team_y = start_y + len(STRUCTURE_TYPES) * 40 + 60
+            teams = game_config.get_teams() + [{'id': None, 'name': 'Neutral', 'color': (128, 128, 128)}]
+            for i, team in enumerate(teams):
+                btn_y = team_y + i * 35
+                if btn_y <= y < btn_y + 30:
+                    self.structure_team = team['id']
+                    break
     
     def place_unit(self, row, col):
         """Place a unit at the specified position"""
@@ -506,6 +551,30 @@ class ScenarioEditor:
         for unit in self.units:
             if unit["row"] == row and unit["col"] == col:
                 return unit
+        return None
+    
+    def place_structure(self, row, col):
+        """Place a structure at the specified position"""
+        # Remove any existing structure at this position
+        self.remove_structure(row, col)
+        
+        # Add new structure
+        self.structures.append({
+            "type": self.selected_structure,
+            "team": self.structure_team,
+            "row": row,
+            "col": col
+        })
+    
+    def remove_structure(self, row, col):
+        """Remove structure at the specified position"""
+        self.structures = [s for s in self.structures if not (s["row"] == row and s["col"] == col)]
+    
+    def get_structure_at(self, row, col):
+        """Get structure at specified position"""
+        for structure in self.structures:
+            if structure["row"] == row and structure["col"] == col:
+                return structure
         return None
     
     def start_unit_creator(self):
@@ -1089,6 +1158,7 @@ class ScenarioEditor:
         """Create a new empty scenario"""
         self.map_data = [[0 for _ in range(self.map_width)] for _ in range(self.map_height)]
         self.units = []
+        self.structures = []
         print("New scenario created")
     
     def save_scenario(self):
@@ -1140,7 +1210,8 @@ class ScenarioEditor:
         units_data = {
             "scenario": self.scenario_number,
             "description": self.scenario_description,
-            "teams": list(teams_data.values())
+            "teams": list(teams_data.values()),
+            "structures": self.structures  # Add structures to saved data
         }
         
         with open(units_file, 'w') as f:
@@ -1151,6 +1222,7 @@ class ScenarioEditor:
         print(f"  Units: {units_file}")
         print(f"  Grid: {self.map_width}x{self.map_height}")
         print(f"  Units placed: {len(self.units)}")
+        print(f"  Structures placed: {len(self.structures)}")
     
     def load_scenario(self):
         """Load a scenario from files (supports both old and new formats)"""
@@ -1244,9 +1316,13 @@ class ScenarioEditor:
                             "row": unit["row"],
                             "col": unit["col"]
                         })
+                
+                # Load structures (if present)
+                self.structures = units_data.get("structures", [])
             
             print(f"Loaded units from {units_file}")
             print(f"  Units loaded: {len(self.units)}")
+            print(f"  Structures loaded: {len(self.structures)}")
         else:
             print(f"Units file not found: {units_file}")
         
@@ -1432,6 +1508,46 @@ class ScenarioEditor:
                     self.screen.blit(name_surf, (15, y_offset + 6))
                     
                     y_offset += 35
+        
+        elif self.mode == MODE_STRUCTURES:
+            # Structure type selection
+            title = self.font.render("Structure Types:", True, BLACK)
+            self.screen.blit(title, (10, y_offset))
+            y_offset += 30
+            
+            for struct_type in STRUCTURE_TYPES:
+                btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 35)
+                is_selected = (struct_type == self.selected_structure)
+                color = YELLOW if is_selected else WHITE
+                pygame.draw.rect(self.screen, color, btn_rect)
+                pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+                
+                name_surf = self.small_font.render(struct_type.capitalize(), True, BLACK)
+                self.screen.blit(name_surf, (15, y_offset + 8))
+                
+                y_offset += 40
+            
+            # Team selection (including neutral option)
+            y_offset += 20
+            team_title = self.font.render("Team:", True, BLACK)
+            self.screen.blit(team_title, (10, y_offset))
+            y_offset += 30
+            
+            teams = game_config.get_teams() + [{'id': None, 'name': 'Neutral', 'color': [128, 128, 128]}]
+            for team in teams:
+                btn_rect = pygame.Rect(10, y_offset, PANEL_WIDTH - 20, 30)
+                is_selected = (team['id'] == self.structure_team)
+                if is_selected:
+                    color = YELLOW
+                else:
+                    color = tuple(team['color']) if isinstance(team['color'], list) else team['color']
+                pygame.draw.rect(self.screen, color, btn_rect)
+                pygame.draw.rect(self.screen, BLACK, btn_rect, 2)
+                
+                name_surf = self.small_font.render(team['name'], True, BLACK)
+                self.screen.blit(name_surf, (15, y_offset + 6))
+                
+                y_offset += 35
     
     def draw_grid(self):
         """Draw the main editing grid with zoom and pan support"""
@@ -1495,6 +1611,35 @@ class ScenarioEditor:
                     text_rect = text_surf.get_rect(center=(center_x, center_y))
                     self.screen.blit(text_surf, text_rect)
         
+        # Draw structures
+        for structure in self.structures:
+            screen_x = self.grid_x + structure["col"] * cell_size + self.camera_x
+            screen_y = self.grid_y + structure["row"] * cell_size + self.camera_y
+            
+            # Only draw if visible
+            if (screen_x + cell_size >= self.grid_x and screen_x < self.grid_x + self.grid_width and
+                screen_y + cell_size >= self.grid_y and screen_y < self.grid_y + self.grid_height):
+                
+                # Get team color (or gray for neutral)
+                if structure["team"] is not None:
+                    team_config = game_config.get_team_config(structure["team"])
+                    team_color = tuple(team_config["color"]) if team_config else GRAY
+                else:
+                    team_color = (150, 150, 150)  # Neutral gray
+                
+                # Draw structure as rectangle
+                struct_rect = pygame.Rect(screen_x + 2, screen_y + 2, cell_size - 4, cell_size - 4)
+                pygame.draw.rect(self.screen, team_color, struct_rect)
+                pygame.draw.rect(self.screen, BLACK, struct_rect, max(1, int(cell_size / 15)))
+                
+                # Draw structure type letter if zoomed in enough
+                if cell_size >= 15:
+                    letter = structure["type"][0].upper()
+                    text_surf = self.small_font.render(letter, True, WHITE)
+                    text_rect = text_surf.get_rect(center=(int(screen_x + cell_size / 2), 
+                                                           int(screen_y + cell_size / 2)))
+                    self.screen.blit(text_surf, text_rect)
+        
         # Draw border
         pygame.draw.rect(self.screen, BLACK, clip_rect, 2)
         
@@ -1524,13 +1669,14 @@ class ScenarioEditor:
         controls = [
             "T - Terrain mode",
             "U - Units mode",
+            "R - Structures mode",
             "S - Save scenario",
             "L - Load scenario",
             "N - New scenario",
             "Wheel - Zoom",
             "Middle - Pan",
             "Arrows - Pan",
-            "R - Reset view",
+            "R(hold) - Reset view",
             "Left - Place",
             "Right - Erase",
             "Q - Quit"
@@ -1550,6 +1696,7 @@ class ScenarioEditor:
         stats = [
             f"Grid: {self.map_width}x{self.map_height}",
             f"Units: {len(self.units)}",
+            f"Structures: {len(self.structures)}",
             f"Scenario: {self.scenario_number}"
         ]
         
