@@ -2,6 +2,42 @@
 
 A turn-based strategy game built with Python and Pygame featuring grid-based combat, unit management, and tactical gameplay.
 
+**🎮 Strategy Game Engine** - Create your own strategy games without coding!
+
+## Create Your Own Game
+
+This isn't just a game - it's a **complete strategy game creation engine**! You can create entirely new games or modify this one using visual tools.
+
+### Quick Start: Create a Game in 30 Minutes
+
+1. **Configure your game:** Edit `game_config.json` to set name, teams, colors
+2. **Design terrain:** Use editor to create custom terrain types
+3. **Define units:** Use editor to create unit types with stats
+4. **Build maps:** Paint terrain and place units visually
+5. **Play!** Launch and enjoy your custom game
+
+```bash
+python editor.py  # Launch visual editor
+python main.py    # Play your game
+```
+
+### What You Can Create
+
+✅ **Custom Terrain Types** - Visual creator with color picker and passability settings  
+✅ **Custom Unit Types** - Define stats, ranges, abilities without code  
+✅ **Custom Maps** - Paint terrain and place units with mouse  
+✅ **Multiple Scenarios** - Create campaigns or standalone battles  
+✅ **Team Configuration** - 2+ teams with custom names/colors  
+✅ **Complete Games** - Fantasy, sci-fi, historical, or your own theme  
+
+### Full Guides
+
+📚 **[NEW_GAME_GUIDE.md](docs/NEW_GAME_GUIDE.md)** - Complete walkthrough for creating games  
+📋 **[QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - Quick checklists and commands  
+🎨 **[EDITOR.md](docs/EDITOR.md)** - Visual editor documentation  
+
+---
+
 ## Features
 
 ### Menu System & Campaign
@@ -98,28 +134,65 @@ A turn-based strategy game built with Python and Pygame featuring grid-based com
 ### Available Scenarios
 - **Scenario 1: The First Battle** - 10x10 small map, 12 units, tutorial-friendly
 - **Scenario 2: The Narrow Valley** - 8x15 rectangular map, 13 units, variety testing
+- **Scenario 3: The Great Plains Battle** - 200x100 large battle map, 39 units, varied terrain
 
-## Scenario Editor
+In Campaign mode, scenarios are played in order with story context.
+In Skirmish mode, any scenario can be selected directly.
 
-A graphical tool for creating and editing maps and scenarios!
+## Content Creation Tools
+
+A complete suite of visual tools for creating custom games without coding!
 
 ```bash
 python editor.py
 ```
 
-**Features:**
-- 🎨 Visual map painting with terrain types
-- 🎮 Unit placement with team assignment
-- 💾 Save/load scenarios to game format
-- 🖱️ Mouse-based interface with keyboard shortcuts
-- 📏 Adjustable grid sizes (5×5 to 50×50)
-- 🎯 Real-time preview of maps and units
+### Visual Map Editor
+- 🎨 **Paint terrain** with mouse clicks
+- 🗺️ **Multiple terrain types** with mobility settings (Easy/Slow/Blocked)
+- 📏 **Resize maps** dynamically (5×5 to 50×50)
+- 🖱️ **Click to place**, right-click to erase
+- 💾 **Save/load** scenarios instantly
 
-See **[docs/EDITOR.md](docs/EDITOR.md)** for complete editor documentation.
-- **Scenario 3: The Great Plains Battle** - 200x100 large battle map, 39 units, varied terrain
+### Terrain Type Creator
+- ✨ **Create custom terrains** with visual form
+- 🎨 **Live color preview** while designing
+- 🚶 **Set passability** (Easy/Slow/Blocked)
+- 🖼️ **Icon support** for future sprites
+- ♾️ **Multiple terrains** can share same passability
 
-In Campaign mode, scenarios are played in order with story context.
-In Skirmish mode, any scenario can be selected directly.
+**Example:** Create "Lava" (blocked), "Ice" (slow), "Bridge" (easy) with custom colors!
+
+### Unit Type Creator
+- ⚔️ **Define unit stats** visually
+- 📊 **Set attributes**: Health, Attack, Defense, Range, Mobility, Vision
+- 🎯 **Advanced settings**: Hit chance, projectile count, fire type
+- 🔄 **Instant availability** after creation
+- 📁 **JSON-based** for easy sharing
+
+**Example:** Create "Wizard" with high attack, low health, long range!
+
+### Complete Workflow
+1. **Configure** - Edit `game_config.json` for game name and teams
+2. **Create Terrains** - Use editor to define terrain types
+3. **Create Units** - Use editor to define unit types
+4. **Design Maps** - Paint terrain and place units
+5. **Test** - Launch game and play your creation
+6. **Iterate** - Quickly adjust and refine
+
+### Documentation
+- 📚 **[NEW_GAME_GUIDE.md](docs/NEW_GAME_GUIDE.md)** - Complete game creation tutorial
+- 📋 **[QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - Quick reference and checklists
+- 🎨 **[EDITOR.md](docs/EDITOR.md)** - Detailed editor documentation
+- ⚙️ **[CONFIGURATION.md](docs/CONFIGURATION.md)** - Configuration system guide
+
+### What You Can Build
+- ⚔️ Fantasy battles with knights, wizards, and dragons
+- 🚀 Sci-fi warfare with mechs and artillery
+- 📜 Historical conflicts with ancient armies
+- 🎮 Your own unique game concepts!
+
+**No programming required** - All through visual interfaces and JSON configuration!
 
 ## Installation
 
