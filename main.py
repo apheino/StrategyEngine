@@ -174,6 +174,52 @@ def get_defeat_condition():
 # MENU FUNCTIONS
 # ============================================================================
 
+def get_available_scenarios():
+    """
+    Scan resources/maps directory for available scenarios
+    
+    Returns:
+        list: List of dicts with scenario info: [{"number": int, "description": str}, ...]
+    """
+    scenarios = []
+    maps_dir = Path("resources/maps")
+    
+    if not maps_dir.exists():
+        return scenarios
+    
+    # Find all map_N.txt files
+    map_files = sorted(maps_dir.glob("map_*.txt"))
+    
+    for map_file in map_files:
+        # Extract scenario number from filename (e.g., map_1.txt -> 1)
+        try:
+            scenario_num = int(map_file.stem.split('_')[1])
+        except (ValueError, IndexError):
+            continue
+        
+        # Check if corresponding units file exists
+        units_file = maps_dir / f"units_{scenario_num}.json"
+        if not units_file.exists():
+            continue
+        
+        # Try to load description from units file
+        description = f"Scenario {scenario_num}"
+        try:
+            with open(units_file, 'r') as f:
+                units_data = json.load(f)
+                if 'description' in units_data and units_data['description']:
+                    description = units_data['description']
+        except (json.JSONDecodeError, IOError):
+            pass
+        
+        scenarios.append({
+            "number": scenario_num,
+            "description": description
+        })
+    
+    return scenarios
+
+
 def init_main_menu():
     """Initialize main menu buttons"""
     global menu_buttons, selected_menu_item
@@ -186,14 +232,22 @@ def init_main_menu():
 
 
 def init_scenario_select_menu():
-    """Initialize scenario selection menu"""
+    """Initialize scenario selection menu (dynamically discovers available scenarios)"""
     global menu_buttons, selected_menu_item
-    menu_buttons = [
-        {"text": "Scenario 1: The First Battle", "action": "scenario_1"},
-        {"text": "Scenario 2: The Narrow Valley", "action": "scenario_2"},
-        {"text": "Scenario 3: The Great Plains", "action": "scenario_3"},
-        {"text": "Back to Main Menu", "action": "main_menu"}
-    ]
+    
+    # Dynamically discover available scenarios
+    scenarios = get_available_scenarios()
+    
+    menu_buttons = []
+    for scenario in scenarios:
+        menu_buttons.append({
+            "text": f"Scenario {scenario['number']}: {scenario['description']}",
+            "action": f"scenario_{scenario['number']}"
+        })
+    
+    # Add back button
+    menu_buttons.append({"text": "Back to Main Menu", "action": "main_menu"})
+    
     selected_menu_item = 0
 
 
@@ -531,12 +585,13 @@ def execute_menu_action(button_index):
     elif action == "skirmish":
         init_scenario_select_menu()
         current_state = GameState.SCENARIO_SELECT
-    elif action == "scenario_1":
-        start_scenario(1, campaign_mode=False)
-    elif action == "scenario_2":
-        start_scenario(2, campaign_mode=False)
-    elif action == "scenario_3":
-        start_scenario(3, campaign_mode=False)
+    elif action.startswith("scenario_"):
+        # Handle dynamic scenario selection
+        try:
+            scenario_num = int(action.split('_')[1])
+            start_scenario(scenario_num, campaign_mode=False)
+        except (ValueError, IndexError):
+            print(f"Invalid scenario action: {action}")
     elif action == "main_menu":
         init_main_menu()
         current_state = GameState.MAIN_MENU
