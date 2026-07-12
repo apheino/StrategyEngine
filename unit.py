@@ -198,6 +198,7 @@ class Unit:
             'speed': 2.0,
             'projectile_speed': 0.0,  # 0 = melee (no projectile), >0 = ranged with projectile
             'projectile_count': 1,  # Number of projectiles fired per attack (1 = single shot, 2+ = volley/battery)
+            'projectile_sprite': None,  # Sprite name for projectile (e.g., 'arrow', 'boulder', None for melee)
             'hit_chance': 0.90,  # Probability of hitting (0.0 to 1.0, default 90%)
             'damage_std': 2.0,  # Standard deviation for damage variance (Gaussian distribution)
             'fire_type': 'direct',  # 'direct' = needs line of sight, 'indirect' = can fire over obstacles
@@ -231,6 +232,7 @@ class Unit:
         self.speed = attributes['speed']
         self.projectile_speed = attributes['projectile_speed']
         self.projectile_count = max(1, attributes['projectile_count'])  # Ensure at least 1
+        self.projectile_sprite = attributes['projectile_sprite']  # Sprite name for projectile
         self.hit_chance = max(0.0, min(1.0, attributes['hit_chance']))  # Clamp between 0.0 and 1.0
         self.damage_std = max(0.0, attributes['damage_std'])  # Standard deviation for damage variance
         self.fire_type = attributes['fire_type']  # 'direct' or 'indirect'
@@ -900,21 +902,16 @@ class Unit:
         """
         Get the projectile sprite name for this unit
         
+        Returns sprite name loaded from unit JSON definition file.
+        Returns None for melee units (projectile_speed <= 0).
+        
         Returns:
-            String sprite name or None
+            str: Sprite name (e.g., 'arrow', 'boulder') or None for melee units
         """
         if self.projectile_speed <= 0:
             return None
         
-        # Map unit types to projectile sprites
-        projectile_map = {
-            'archer': 'arrow',
-            'spearman': 'spear',
-            'mage': 'magic_bolt',
-            'catapult': 'boulder',
-        }
-        
-        return projectile_map.get(self.unit_type, 'arrow')  # Default to arrow
+        return self.projectile_sprite
     
     def reset_turn(self):
         """Reset unit for a new turn with health-based mobility"""

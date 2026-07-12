@@ -9,6 +9,7 @@
   "speed": 1.5,
   "projectile_speed": 3.0,
   "projectile_count": 1,
+  "projectile_sprite": "boulder",
   "hit_chance": 0.65,
   "damage_std": 5.0,
   "fire_type": "indirect",

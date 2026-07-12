@@ -19,6 +19,7 @@ Unit attributes are now loaded from JSON files located in `resources/units/{unit
   "speed": 2.0,
   "projectile_speed": 0.0,
   "projectile_count": 1,
+  "projectile_sprite": null,
   "hit_chance": 0.95,
   "damage_std": 3.0,
   "fire_type": "direct",
@@ -36,6 +37,7 @@ If a unit's attribute file is not found, default values are used.
 - **attack_range** (int): Number of grid cells unit can attack from (loaded from file)
 - **projectile_speed** (float): Speed of projectiles in cells per second (0 = melee, >0 = ranged)
 - **projectile_count** (int): Number of projectiles fired per attack (1 = single shot, 2+ = volley/battery)
+- **projectile_sprite** (string or null): Name of projectile sprite file (e.g., "arrow", "boulder") - null for melee units
 - **hit_chance** (float): Probability of hitting target (0.0 to 1.0) - **melee units have higher accuracy**
 - **damage_std** (float): Standard deviation for damage variance (Gaussian distribution) - **evolve for consistency**
 - **fire_type** (string): Attack type - **'direct'** requires line of sight, **'indirect'** can fire over obstacles

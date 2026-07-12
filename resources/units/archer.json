@@ -9,6 +9,7 @@
   "speed": 2.5,
   "projectile_speed": 4.0,
   "projectile_count": 3,
+  "projectile_sprite": "arrow",
   "hit_chance": 0.75,
   "damage_std": 2.5,
   "fire_type": "direct",

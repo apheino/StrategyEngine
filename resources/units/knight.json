@@ -9,6 +9,7 @@
   "speed": 1.8,
   "projectile_speed": 0.0,
   "projectile_count": 1,
+  "projectile_sprite": null,
   "hit_chance": 0.98,
   "damage_std": 4.0,
   "fire_type": "direct",
