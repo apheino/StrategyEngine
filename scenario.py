@@ -793,7 +793,13 @@ class Scenario:
         
         # Draw attackable enemies (red border)
         for enemy in self.valid_attacks:
-            row, col = enemy.position
+            # Handle both Unit objects (with .position) and Structure objects (with .row, .col)
+            from structure import Structure
+            if isinstance(enemy, Structure):
+                row, col = enemy.row, enemy.col
+            else:
+                row, col = enemy.position
+            
             x = center_x + col * scaled_cell_size
             y = center_y + row * scaled_cell_size
             
