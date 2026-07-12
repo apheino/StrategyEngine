@@ -464,16 +464,34 @@ class Scenario:
                         existing_at_pos = sum(1 for msg in self.combat_messages if msg[1] == projectile.target.position)
                         x_offset = (existing_at_pos - 1) * 0.5  # Spread by 0.5 cells horizontally
                         
-                        self.add_combat_message(message, projectile.target.position, color, x_offset)
+                        # Handle both Unit and Structure targets
+                        from structure import Structure
+                        target_pos = (projectile.target.row, projectile.target.col) if isinstance(projectile.target, Structure) else projectile.target.position
+                        self.add_combat_message(message, target_pos, color, x_offset)
                     
                     if projectile.is_hit:
                         # Get actual damage dealt (with variance)
                         actual_dmg = getattr(projectile, 'actual_damage', projectile.base_damage)
-                        print(f"{projectile.attacker.unit_type}'s projectile hit {projectile.target.unit_type} for {actual_dmg} damage (HP: {projectile.target.health}/{projectile.target.max_health})")
-                        if projectile.target.is_dying:
-                            print(f"{projectile.target.unit_type} is defeated!")
+                        
+                        # Handle both Unit and Structure targets
+                        from structure import Structure
+                        target_name = projectile.target.type if isinstance(projectile.target, Structure) else projectile.target.unit_type
+                        is_structure = isinstance(projectile.target, Structure)
+                        
+                        print(f"{projectile.attacker.unit_type}'s projectile hit {target_name} for {actual_dmg} damage (HP: {projectile.target.health}/{projectile.target.max_health})")
+                        
+                        # Check if target is defeated/destroyed
+                        if is_structure:
+                            if not projectile.target.is_alive:
+                                print(f"{target_name} destroyed!")
+                        else:
+                            if projectile.target.is_dying:
+                                print(f"{target_name} is defeated!")
                     else:
-                        print(f"{projectile.attacker.unit_type}'s projectile missed {projectile.target.unit_type}!")
+                        # Handle both Unit and Structure targets for miss messages
+                        from structure import Structure
+                        target_name = projectile.target.type if isinstance(projectile.target, Structure) else projectile.target.unit_type
+                        print(f"{projectile.attacker.unit_type}'s projectile missed {target_name}!")
                 # Remove completed projectiles
                 self.projectiles.remove(projectile)
         
@@ -1440,10 +1458,11 @@ class Scenario:
                     # Indirect fire can shoot over obstacles
                     valid_attacks.append(enemy)
         
-        # Check all enemy structures
+        # Check all enemy structures (and neutral structures)
         for structure in self.structures:
-            # Skip if same team, neutral (None), or destroyed
-            if structure.team == unit.team or structure.team is None or not structure.is_alive:
+            # Skip if same team or destroyed
+            # Neutral structures (team=None) are attackable by all teams
+            if structure.team == unit.team or not structure.is_alive:
                 continue
             
             struct_row, struct_col = structure.row, structure.col
