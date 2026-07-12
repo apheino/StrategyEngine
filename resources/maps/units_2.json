@@ -4,29 +4,121 @@
   "teams": [
     {
       "id": 0,
-      "name": "Blue",
-      "description": "Player team starting at left side",
+      "name": "Blue Alliance",
+      "description": "Player-controlled forces",
       "units": [
-        {"type": "soldier", "row": 3, "col": 2},
-        {"type": "soldier", "row": 4, "col": 2},
-        {"type": "archer", "row": 2, "col": 3},
-        {"type": "archer", "row": 5, "col": 3},
-        {"type": "knight", "row": 3, "col": 3},
-        {"type": "knight", "row": 4, "col": 3},
-        {"type": "catapult", "row": 3, "col": 1}
+        {
+          "type": "soldier",
+          "row": 3,
+          "col": 2
+        },
+        {
+          "type": "soldier",
+          "row": 4,
+          "col": 2
+        },
+        {
+          "type": "archer",
+          "row": 2,
+          "col": 3
+        },
+        {
+          "type": "archer",
+          "row": 5,
+          "col": 3
+        },
+        {
+          "type": "knight",
+          "row": 3,
+          "col": 3
+        },
+        {
+          "type": "knight",
+          "row": 4,
+          "col": 3
+        },
+        {
+          "type": "catapult",
+          "row": 3,
+          "col": 1
+        },
+        {
+          "type": "catapult",
+          "row": 0,
+          "col": 0
+        },
+        {
+          "type": "catapult",
+          "row": 1,
+          "col": 0
+        },
+        {
+          "type": "catapult",
+          "row": 2,
+          "col": 0
+        },
+        {
+          "type": "catapult",
+          "row": 3,
+          "col": 0
+        },
+        {
+          "type": "catapult",
+          "row": 4,
+          "col": 0
+        },
+        {
+          "type": "catapult",
+          "row": 5,
+          "col": 0
+        },
+        {
+          "type": "catapult",
+          "row": 6,
+          "col": 0
+        },
+        {
+          "type": "catapult",
+          "row": 7,
+          "col": 0
+        }
       ]
     },
     {
       "id": 1,
-      "name": "Red",
-      "description": "Enemy team starting at right side",
+      "name": "Red Empire",
+      "description": "Enemy forces",
       "units": [
-        {"type": "soldier", "row": 3, "col": 12},
-        {"type": "soldier", "row": 4, "col": 12},
-        {"type": "archer", "row": 2, "col": 11},
-        {"type": "archer", "row": 5, "col": 11},
-        {"type": "knight", "row": 3, "col": 11},
-        {"type": "knight", "row": 4, "col": 11}
+        {
+          "type": "soldier",
+          "row": 3,
+          "col": 12
+        },
+        {
+          "type": "soldier",
+          "row": 4,
+          "col": 12
+        },
+        {
+          "type": "archer",
+          "row": 2,
+          "col": 11
+        },
+        {
+          "type": "archer",
+          "row": 5,
+          "col": 11
+        },
+        {
+          "type": "knight",
+          "row": 3,
+          "col": 11
+        },
+        {
+          "type": "knight",
+          "row": 4,
+          "col": 11
+        }
       ]
     }
   ]
