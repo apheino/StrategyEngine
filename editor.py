@@ -202,6 +202,7 @@ class ScenarioEditor:
         print("  S: Save scenario")
         print("  L: Load scenario")
         print("  N: New scenario")
+        print("  [ / ]: Change scenario number")
         print("  +/-: Change grid size")
         print("  1-6: Quick select terrain")
         print("  Q: Quit")
@@ -261,6 +262,10 @@ class ScenarioEditor:
             self.change_grid_size(1, 1)
         elif key == pygame.K_MINUS:
             self.change_grid_size(-1, -1)
+        elif key == pygame.K_LEFTBRACKET:  # [ key
+            self.change_scenario(-1)
+        elif key == pygame.K_RIGHTBRACKET:  # ] key
+            self.change_scenario(1)
         elif pygame.K_1 <= key <= pygame.K_6:
             terrain_id = key - pygame.K_1
             if terrain_id < len(TERRAIN_TYPES):
@@ -269,6 +274,11 @@ class ScenarioEditor:
     def handle_mouse_click(self, button, pos):
         """Handle mouse clicks"""
         x, y = pos
+        
+        # Check if clicking in toolbar (scenario selector)
+        if y < TOOLBAR_HEIGHT:
+            self.handle_toolbar_click(x, y)
+            return
         
         # Check if clicking in grid area
         if self.grid_x <= x < self.grid_x + self.grid_width and \
@@ -293,6 +303,31 @@ class ScenarioEditor:
         # Check if clicking in left panel (terrain/unit selection)
         elif x < PANEL_WIDTH:
             self.handle_panel_click(x, y)
+    
+    def handle_toolbar_click(self, x, y):
+        """Handle clicks in the toolbar"""
+        # Scenario selector buttons (< and > around scenario number)
+        # Position around x=400, y=20
+        prev_btn = pygame.Rect(380, 15, 30, 30)
+        next_btn = pygame.Rect(560, 15, 30, 30)
+        
+        if prev_btn.collidepoint(x, y):
+            self.change_scenario(-1)
+        elif next_btn.collidepoint(x, y):
+            self.change_scenario(1)
+    
+    def change_scenario(self, delta):
+        """Change the active scenario number"""
+        new_number = max(1, min(99, self.scenario_number + delta))
+        if new_number != self.scenario_number:
+            self.scenario_number = new_number
+            print(f"Switched to scenario {self.scenario_number}")
+            # Check if scenario exists
+            map_file = Path(f"resources/maps/map_{self.scenario_number}.txt")
+            if map_file.exists():
+                print(f"  ⚠ Scenario {self.scenario_number} already exists - use 'L' to load or 'S' to overwrite")
+            else:
+                print(f"  New scenario - use 'S' to save")
     
     def handle_mouse_drag(self, pos):
         """Handle mouse dragging"""
@@ -1103,10 +1138,35 @@ class ScenarioEditor:
         mode_surf = self.font.render(mode_text, True, YELLOW)
         self.screen.blit(mode_surf, (EDITOR_WIDTH - 300, 20))
         
-        # Scenario number
+        # Scenario selector with < > buttons
         scenario_text = f"Scenario: {self.scenario_number}"
         scenario_surf = self.font.render(scenario_text, True, WHITE)
-        self.screen.blit(scenario_surf, (400, 20))
+        self.screen.blit(scenario_surf, (415, 20))
+        
+        # Previous scenario button
+        prev_btn = pygame.Rect(380, 15, 30, 30)
+        pygame.draw.rect(self.screen, LIGHT_GRAY, prev_btn)
+        pygame.draw.rect(self.screen, WHITE, prev_btn, 2)
+        prev_text = self.font.render("<", True, BLACK)
+        prev_text_rect = prev_text.get_rect(center=prev_btn.center)
+        self.screen.blit(prev_text, prev_text_rect)
+        
+        # Next scenario button
+        next_btn = pygame.Rect(560, 15, 30, 30)
+        pygame.draw.rect(self.screen, LIGHT_GRAY, next_btn)
+        pygame.draw.rect(self.screen, WHITE, next_btn, 2)
+        next_text = self.font.render(">", True, BLACK)
+        next_text_rect = next_text.get_rect(center=next_btn.center)
+        self.screen.blit(next_text, next_text_rect)
+        
+        # Show if scenario exists
+        map_file = Path(f"resources/maps/map_{self.scenario_number}.txt")
+        if map_file.exists():
+            exists_text = self.small_font.render("(exists)", True, YELLOW)
+            self.screen.blit(exists_text, (600, 25))
+        else:
+            exists_text = self.small_font.render("(new)", True, GREEN)
+            self.screen.blit(exists_text, (600, 25))
     
     def draw_left_panel(self):
         """Draw the left selection panel"""
