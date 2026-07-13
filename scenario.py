@@ -312,6 +312,31 @@ class Scenario:
         """
         return [unit for unit in self.units if unit.team == team and unit.is_alive]
     
+    def dev_kill_all_enemies(self):
+        """
+        DEVELOPMENT FUNCTION: Instantly kill all enemy units
+        
+        This is a testing/debugging function to quickly test victory conditions
+        and campaign flow without playing through entire scenarios.
+        
+        Kills all units not on player-controlled teams (teams >= 1).
+        Triggers death animations for visual feedback.
+        """
+        player_team_ids = [0]  # Player is always team 0
+        enemies_killed = 0
+        
+        for unit in self.units:
+            if unit.team not in player_team_ids and unit.is_alive:
+                # Set health to 0 and mark as dying (triggers death animation)
+                unit.health = 0
+                unit.is_alive = False
+                unit.is_dying = True
+                unit.set_animation("death")
+                enemies_killed += 1
+        
+        print(f"[DEV] Killed {enemies_killed} enemy units")
+        return enemies_killed
+    
     def get_structure_at(self, row, col):
         """
         Get structure at a specific grid position

@@ -765,6 +765,11 @@ def handle_playing_events(event):
             scenario.show_all_map = not scenario.show_all_map
             status = "ON" if scenario.show_all_map else "OFF"
             print(f"Show all map (75% fog): {status}")
+        elif event.key == pygame.K_F12:
+            # F12 key - [DEV] Kill all enemy units (for testing campaign flow)
+            if scenario:
+                scenario.dev_kill_all_enemies()
+                print("[DEV] Press F12 to instantly defeat all enemies")
     
     # Pass ALL events to grid for pan/zoom tracking
     scenario.grid.handle_event(event, SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -922,6 +927,7 @@ def draw_gameplay(fps):
         "TAB: Cycle units",
         "H: Toggle damage #s",
         "P: Show all map",
+        "F12: Kill enemies [DEV]",
         "ESC: Main menu"
     ]
     for i, text in enumerate(instructions):
