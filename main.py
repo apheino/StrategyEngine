@@ -278,11 +278,18 @@ def init_victory_menu():
     global menu_buttons, selected_menu_item
     buttons = []
     
-    # Check if in campaign mode and there's a next scenario
+    # Check if in campaign mode
     current_campaign = campaign.get_current_campaign()
-    if current_campaign and not current_campaign.is_complete():
-        next_scenario = current_campaign.get_next_scenario()
-        if next_scenario:
+    if current_campaign:
+        # Mark the current scenario as complete
+        current_campaign.mark_scenario_complete(current_scenario_number)
+        
+        # Check if campaign is now complete
+        if current_campaign.is_complete():
+            # Last scenario - show "Complete Campaign" button
+            buttons.append({"text": "Complete Campaign", "action": "complete_campaign"})
+        else:
+            # More scenarios - show "Continue Campaign" button
             buttons.append({"text": "Continue Campaign", "action": "next_scenario"})
     
     buttons.extend([
@@ -329,7 +336,7 @@ def start_campaign(campaign_id):
 
 def show_campaign_complete():
     """Show the campaign complete screen"""
-    global current_state, current_story
+    global current_state, current_story, menu_buttons, selected_menu_item
     
     current_campaign = campaign.get_current_campaign()
     if current_campaign:
@@ -337,11 +344,16 @@ def show_campaign_complete():
         current_story = {
             "title": "Campaign Complete!",
             "intro_text": current_campaign.victory_text,
-            "victory_text": [],
+            "victory_text": current_campaign.victory_text,  # Use same text for victory screen
             "defeat_text": []
         }
         current_state = GameState.VICTORY
-        init_victory_menu()
+        
+        # Show only main menu button for campaign complete
+        menu_buttons = [
+            {"text": "Main Menu", "action": "main_menu"}
+        ]
+        selected_menu_item = 0
 
 
 def start_scenario(scenario_number, campaign_mode=False):
@@ -676,21 +688,16 @@ def execute_menu_action(button_index):
         init_main_menu()
         current_state = GameState.MAIN_MENU
     elif action == "next_scenario":
-        # Get next scenario from campaign
+        # Get next scenario from campaign (scenario already marked complete in init_victory_menu)
         current_campaign = campaign.get_current_campaign()
         if current_campaign:
-            # Mark current scenario as complete
-            current_campaign.mark_scenario_complete(current_scenario_number)
-            
-            # Check if campaign is complete
-            if current_campaign.is_complete():
-                # Show campaign victory screen
-                show_campaign_complete()
-            else:
-                # Start next scenario
-                next_num = current_campaign.get_current_scenario()
-                if next_num:
-                    start_scenario(next_num, campaign_mode=True)
+            # Start next scenario
+            next_num = current_campaign.get_current_scenario()
+            if next_num:
+                start_scenario(next_num, campaign_mode=True)
+    elif action == "complete_campaign":
+        # Show campaign complete screen
+        show_campaign_complete()
     elif action == "replay":
         start_scenario(current_scenario_number, campaign_mode=is_campaign_mode)
     elif action == "quit":
