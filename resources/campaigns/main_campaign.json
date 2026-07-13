@@ -1,0 +1,30 @@
+{
+  "id": "main_campaign",
+  "name": "Liberation War",
+  "description": "The main campaign following the Blue Alliance's fight for freedom",
+  "scenarios": [
+    {
+      "scenario_number": 1,
+      "required": true,
+      "unlock_condition": null
+    },
+    {
+      "scenario_number": 2,
+      "required": true,
+      "unlock_condition": "complete_1"
+    },
+    {
+      "scenario_number": 3,
+      "required": true,
+      "unlock_condition": "complete_2"
+    }
+  ],
+  "victory_text": [
+    "Campaign Complete!",
+    "",
+    "The Blue Alliance has achieved victory.",
+    "Peace returns to the land.",
+    "",
+    "Thank you for playing!"
+  ]
+}

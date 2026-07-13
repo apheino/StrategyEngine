@@ -1,0 +1,37 @@
+{
+  "id": "tutorial_campaign",
+  "name": "Training Grounds",
+  "description": "Learn the basics of tactical combat through structured exercises",
+  "scenarios": [
+    {
+      "scenario_number": 1,
+      "required": true,
+      "unlock_condition": null,
+      "briefing_override": [
+        "TRAINING EXERCISE 1:",
+        "Movement and Positioning",
+        "",
+        "Learn how to move your units effectively.",
+        "Objective: Defeat all enemy forces."
+      ]
+    },
+    {
+      "scenario_number": 4,
+      "required": true,
+      "unlock_condition": "complete_1",
+      "briefing_override": [
+        "TRAINING EXERCISE 2:",
+        "Attacking Structures",
+        "",
+        "Learn how to assault fortified positions.",
+        "Objective: Destroy all enemy structures."
+      ]
+    }
+  ],
+  "victory_text": [
+    "Training Complete!",
+    "",
+    "You are now ready for real combat.",
+    "Good luck, Commander!"
+  ]
+}

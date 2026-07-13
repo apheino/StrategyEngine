@@ -32,6 +32,7 @@ from constants import (
     BLUE
 )
 from scenario import Scenario
+import campaign
 
 
 # ============================================================================
@@ -224,10 +225,31 @@ def init_main_menu():
     """Initialize main menu buttons"""
     global menu_buttons, selected_menu_item
     menu_buttons = [
-        {"text": "New Campaign", "action": "campaign"},
+        {"text": "Select Campaign", "action": "campaign_select"},
         {"text": "Skirmish", "action": "skirmish"},
         {"text": "Quit", "action": "quit"}
     ]
+    selected_menu_item = 0
+
+
+def init_campaign_select_menu():
+    """Initialize campaign selection menu"""
+    global menu_buttons, selected_menu_item
+    
+    # Get available campaigns
+    campaigns = campaign.get_available_campaigns()
+    
+    menu_buttons = []
+    for campaign_id, campaign_name, description in campaigns:
+        menu_buttons.append({
+            "text": f"{campaign_name}",
+            "action": f"start_campaign_{campaign_id}",
+            "description": description
+        })
+    
+    # Add back button
+    menu_buttons.append({"text": "Back to Main Menu", "action": "main_menu"})
+    
     selected_menu_item = 0
 
 
@@ -256,9 +278,12 @@ def init_victory_menu():
     global menu_buttons, selected_menu_item
     buttons = []
     
-    # Check if there's a next scenario in campaign mode
-    if is_campaign_mode and current_story and current_story.get('next_scenario'):
-        buttons.append({"text": "Continue Campaign", "action": "next_scenario"})
+    # Check if in campaign mode and there's a next scenario
+    current_campaign = campaign.get_current_campaign()
+    if current_campaign and not current_campaign.is_complete():
+        next_scenario = current_campaign.get_next_scenario()
+        if next_scenario:
+            buttons.append({"text": "Continue Campaign", "action": "next_scenario"})
     
     buttons.extend([
         {"text": "Replay Scenario", "action": "replay"},
@@ -277,6 +302,46 @@ def init_defeat_menu():
         {"text": "Main Menu", "action": "main_menu"}
     ]
     selected_menu_item = 0
+
+
+def start_campaign(campaign_id):
+    """
+    Start a campaign
+    
+    Args:
+        campaign_id (str): ID of the campaign to start
+    """
+    global current_state
+    
+    # Load and start the campaign
+    loaded_campaign = campaign.start_campaign(campaign_id)
+    
+    if loaded_campaign:
+        # Get the first scenario in the campaign
+        first_scenario = loaded_campaign.get_current_scenario()
+        if first_scenario:
+            start_scenario(first_scenario, campaign_mode=True)
+    else:
+        print(f"Failed to load campaign: {campaign_id}")
+        init_main_menu()
+        current_state = GameState.MAIN_MENU
+
+
+def show_campaign_complete():
+    """Show the campaign complete screen"""
+    global current_state, current_story
+    
+    current_campaign = campaign.get_current_campaign()
+    if current_campaign:
+        # Create a special story object for campaign complete
+        current_story = {
+            "title": "Campaign Complete!",
+            "intro_text": current_campaign.victory_text,
+            "victory_text": [],
+            "defeat_text": []
+        }
+        current_state = GameState.VICTORY
+        init_victory_menu()
 
 
 def start_scenario(scenario_number, campaign_mode=False):
@@ -434,6 +499,14 @@ def draw_victory_screen():
     # Draw line
     pygame.draw.line(screen, WHITE, (100, 130), (SCREEN_WIDTH - 100, 130), 2)
     
+    # Show campaign progress if in campaign mode
+    current_campaign = campaign.get_current_campaign()
+    if current_campaign:
+        progress_text = current_campaign.get_progress_text()
+        progress_surf = small_font.render(progress_text, True, (200, 200, 100))
+        progress_rect = progress_surf.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        screen.blit(progress_surf, progress_rect)
+    
     # Draw victory text if available
     if current_story:
         victory_lines = current_story.get('victory_text', [])
@@ -580,8 +653,13 @@ def execute_menu_action(button_index):
     
     action = menu_buttons[button_index]['action']
     
-    if action == "campaign":
-        start_scenario(1, campaign_mode=True)
+    if action == "campaign_select":
+        init_campaign_select_menu()
+        current_state = GameState.SCENARIO_SELECT
+    elif action.startswith("start_campaign_"):
+        # Extract campaign ID and start campaign
+        campaign_id = action.replace("start_campaign_", "")
+        start_campaign(campaign_id)
     elif action == "skirmish":
         init_scenario_select_menu()
         current_state = GameState.SCENARIO_SELECT
@@ -593,16 +671,31 @@ def execute_menu_action(button_index):
         except (ValueError, IndexError):
             print(f"Invalid scenario action: {action}")
     elif action == "main_menu":
+        # End current campaign when returning to main menu
+        campaign.end_campaign()
         init_main_menu()
         current_state = GameState.MAIN_MENU
     elif action == "next_scenario":
-        next_num = current_story.get('next_scenario')
-        if next_num:
-            start_scenario(next_num, campaign_mode=True)
+        # Get next scenario from campaign
+        current_campaign = campaign.get_current_campaign()
+        if current_campaign:
+            # Mark current scenario as complete
+            current_campaign.mark_scenario_complete(current_scenario_number)
+            
+            # Check if campaign is complete
+            if current_campaign.is_complete():
+                # Show campaign victory screen
+                show_campaign_complete()
+            else:
+                # Start next scenario
+                next_num = current_campaign.get_current_scenario()
+                if next_num:
+                    start_scenario(next_num, campaign_mode=True)
     elif action == "replay":
         start_scenario(current_scenario_number, campaign_mode=is_campaign_mode)
     elif action == "quit":
         pygame.quit()
+        sys.exit()
         sys.exit()
 
 

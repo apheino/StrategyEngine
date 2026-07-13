@@ -1,0 +1,24 @@
+{
+  "scenario_number": 4,
+  "title": "Siege Warfare",
+  "intro_text": [
+    "The enemy has fortified their position with structures.",
+    "A headquarters, hangar, and defensive sandbags block your path.",
+    "",
+    "Objective: Destroy all enemy structures.",
+    "",
+    "Use concentrated fire to breach their defenses."
+  ],
+  "victory_text": [
+    "Success! The fortifications have been destroyed.",
+    "You have mastered siege warfare.",
+    "",
+    "Enemy structures are no longer an obstacle."
+  ],
+  "defeat_text": [
+    "The fortifications held.",
+    "",
+    "Structures require sustained attacks to destroy.",
+    "Try again with better positioning."
+  ]
+}
