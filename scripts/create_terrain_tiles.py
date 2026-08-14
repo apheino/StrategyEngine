@@ -21,17 +21,19 @@ pygame.init()
 TILE_SIZE = 32
 TRANSPARENT = (0, 0, 0, 0)
 
-# Water colors (animated gradients)
-WATER_LIGHT_1 = (80, 160, 210)
-WATER_LIGHT_2 = (90, 170, 220)
-WATER_MID_1 = (50, 130, 180)
-WATER_MID_2 = (60, 140, 190)
-WATER_DARK_1 = (30, 100, 150)
-WATER_DARK_2 = (40, 110, 160)
-WATER_DEEP_1 = (20, 80, 130)
-WATER_DEEP_2 = (25, 90, 140)
-FOAM_WHITE = (255, 255, 255)
-FOAM_LIGHT = (230, 240, 250)
+# Water colors - Caribbean ocean palette
+WATER_BASE = (25, 105, 180)        # Deep blue base
+WATER_MID = (35, 125, 200)         # Medium blue
+WATER_LIGHT = (50, 145, 220)       # Light blue
+WATER_HIGHLIGHT = (80, 170, 240)   # Bright highlight
+WATER_FOAM = (200, 220, 240)       # Foam white-blue
+WATER_SPARKLE = (255, 255, 255)    # White sparkle
+
+# Deep water colors (darker, deeper ocean)
+DEEP_BASE = (15, 75, 140)
+DEEP_MID = (20, 90, 160)
+DEEP_LIGHT = (30, 110, 180)
+DEEP_HIGHLIGHT = (45, 130, 200)
 
 # Beach/sand colors
 SAND_LIGHT = (245, 225, 180)
@@ -61,60 +63,145 @@ REEF_WATER = (60, 140, 160)
 
 
 def create_water_tile_animated(frame=0, is_deep=False):
-    """Create animated water tile with wave effects"""
+    """Create realistic animated water tile with flowing waves"""
     surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
     
-    # Select colors based on depth
+    # Select color palette based on depth
     if is_deep:
-        base_color = WATER_DEEP_1 if frame % 2 == 0 else WATER_DEEP_2
-        mid_color = WATER_DARK_1 if frame % 2 == 0 else WATER_DARK_2
+        base = DEEP_BASE
+        mid = DEEP_MID
+        light = DEEP_LIGHT
+        highlight = DEEP_HIGHLIGHT
     else:
-        base_color = WATER_MID_1 if frame % 2 == 0 else WATER_MID_2
-        mid_color = WATER_LIGHT_1 if frame % 2 == 0 else WATER_LIGHT_2
+        base = WATER_BASE
+        mid = WATER_MID
+        light = WATER_LIGHT
+        highlight = WATER_HIGHLIGHT
     
-    # Base water
-    surface.fill(base_color)
+    # Animation phase (0 to 2*pi over 8 frames)
+    phase = (frame / 8.0) * 2 * math.pi
     
-    # Wave patterns (animated offset)
-    offset = (frame * 2) % 16
+    # Fill with base color
+    surface.fill(base)
     
-    # Horizontal waves
-    for y in range(0, TILE_SIZE, 8):
-        wave_y = (y + offset) % TILE_SIZE
-        # Light wave
-        for x in range(0, TILE_SIZE, 4):
-            wave_x = x + (wave_y // 4)
-            if wave_x < TILE_SIZE:
-                pygame.draw.line(surface, mid_color, 
-                               (wave_x, wave_y), (min(wave_x + 2, TILE_SIZE - 1), wave_y), 1)
-    
-    # Diagonal waves (for variety)
-    for i in range(-TILE_SIZE, TILE_SIZE, 6):
-        wave_offset = (i + offset) % (TILE_SIZE * 2)
-        x1 = wave_offset
-        y1 = 0
-        x2 = wave_offset + TILE_SIZE
-        y2 = TILE_SIZE
+    # Layer 1: Large rolling waves (slow, horizontal)
+    for y in range(TILE_SIZE):
+        # Sine wave with offset based on frame
+        wave_offset = math.sin(y * 0.3 + phase) * 2
+        wave_intensity = (math.sin(y * 0.3 + phase) + 1) / 2  # 0 to 1
         
-        if 0 <= x1 < TILE_SIZE * 2:
-            # Draw subtle diagonal highlight
-            for j in range(TILE_SIZE):
-                px = x1 + j - TILE_SIZE
-                py = y1 + j
-                if 0 <= px < TILE_SIZE and 0 <= py < TILE_SIZE:
-                    current = surface.get_at((px, py))
-                    # Lighten slightly
-                    new_color = (min(current[0] + 10, 255), 
-                               min(current[1] + 10, 255), 
-                               min(current[2] + 10, 255))
-                    surface.set_at((px, py), new_color)
+        for x in range(TILE_SIZE):
+            # Calculate wave position
+            wx = int(x + wave_offset)
+            if 0 <= wx < TILE_SIZE:
+                # Blend colors based on wave intensity
+                if wave_intensity > 0.7:
+                    color = light
+                elif wave_intensity > 0.4:
+                    color = mid
+                else:
+                    color = base
+                
+                # Apply color with some horizontal variation
+                blend = min(wave_intensity + (x % 3) * 0.1, 1.0)
+                final_color = (
+                    int(base[0] + (color[0] - base[0]) * blend),
+                    int(base[1] + (color[1] - base[1]) * blend),
+                    int(base[2] + (color[2] - base[2]) * blend)
+                )
+                surface.set_at((x, y), final_color)
     
-    # Occasional foam (sparkles)
-    if frame % 4 < 2:
-        foam_positions = [(5, 8), (20, 15), (10, 25), (28, 5), (15, 18)]
-        for fx, fy in foam_positions:
-            if (fx + fy + frame) % 8 < 3:
-                pygame.draw.circle(surface, FOAM_LIGHT, (fx, fy), 1)
+    # Layer 2: Diagonal waves (medium speed, creates depth)
+    for y in range(TILE_SIZE):
+        for x in range(TILE_SIZE):
+            # Diagonal wave pattern
+            wave_val = math.sin((x + y) * 0.4 - phase * 1.5) * 0.5 + 0.5
+            
+            if wave_val > 0.75:
+                current = surface.get_at((x, y))
+                # Lighten pixels on wave crests
+                brightened = (
+                    min(current[0] + 15, 255),
+                    min(current[1] + 20, 255),
+                    min(current[2] + 25, 255)
+                )
+                surface.set_at((x, y), brightened)
+    
+    # Layer 3: Small ripples (fast, perpendicular)
+    for y in range(0, TILE_SIZE, 2):
+        ripple_offset = math.sin(y * 0.8 - phase * 2) * 1.5
+        ripple_intensity = abs(math.sin(y * 0.8 - phase * 2))
+        
+        if ripple_intensity > 0.6:
+            for x in range(TILE_SIZE):
+                rx = int(x + ripple_offset)
+                if 0 <= rx < TILE_SIZE:
+                    current = surface.get_at((rx, y))
+                    # Add subtle highlights
+                    highlighted = (
+                        min(current[0] + 8, 255),
+                        min(current[1] + 10, 255),
+                        min(current[2] + 12, 255)
+                    )
+                    surface.set_at((rx, y), highlighted)
+    
+    # Layer 4: Wave crests with foam
+    for y in range(TILE_SIZE):
+        # Create foam on high wave peaks
+        wave_height = math.sin(y * 0.3 + phase) + math.sin(y * 0.15 + phase * 0.5)
+        
+        if wave_height > 1.3:  # High crest
+            for x in range(TILE_SIZE):
+                # Foam pattern
+                foam_intensity = wave_height - 1.3
+                if (x + y + frame) % 4 < 2:  # Scattered foam
+                    foam_color = (
+                        int(WATER_FOAM[0] * foam_intensity * 0.6),
+                        int(WATER_FOAM[1] * foam_intensity * 0.6),
+                        int(WATER_FOAM[2] * foam_intensity * 0.6)
+                    )
+                    current = surface.get_at((x, y))
+                    blended = (
+                        min(current[0] + foam_color[0], 255),
+                        min(current[1] + foam_color[1], 255),
+                        min(current[2] + foam_color[2], 255)
+                    )
+                    surface.set_at((x, y), blended)
+    
+    # Layer 5: Sparkles (sunlight reflections on water)
+    sparkle_positions = [
+        (4, 6), (12, 3), (20, 10), (28, 8),
+        (7, 18), (16, 15), (24, 22), (10, 28),
+        (18, 25), (26, 19)
+    ]
+    
+    for sx, sy in sparkle_positions:
+        # Sparkles appear and fade with animation
+        sparkle_phase = (sx + sy + frame * 2) % 16
+        if sparkle_phase < 3:
+            # Bright sparkle
+            if sparkle_phase == 1:
+                surface.set_at((sx, sy), WATER_SPARKLE)
+            else:
+                surface.set_at((sx, sy), highlight)
+    
+    # Layer 6: Depth variations (darker patches for realism)
+    for y in range(0, TILE_SIZE, 4):
+        for x in range(0, TILE_SIZE, 4):
+            depth_variation = math.sin(x * 0.2 + y * 0.3 + phase * 0.3) * 0.3
+            if depth_variation < -0.15:
+                # Darken this area slightly
+                for dy in range(3):
+                    for dx in range(3):
+                        px, py = x + dx, y + dy
+                        if 0 <= px < TILE_SIZE and 0 <= py < TILE_SIZE:
+                            current = surface.get_at((px, py))
+                            darkened = (
+                                max(int(current[0] * 0.9), 0),
+                                max(int(current[1] * 0.9), 0),
+                                max(int(current[2] * 0.9), 0)
+                            )
+                            surface.set_at((px, py), darkened)
     
     return surface
 
