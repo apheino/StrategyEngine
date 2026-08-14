@@ -1,9 +1,9 @@
 {
   "game": {
-    "name": "Combat Alley 2000",
+    "name": "Caribbean Naval Warfare",
     "version": "1.0.0",
     "author": "Strategy Engine Team",
-    "description": "A tactical turn-based strategy game",
+    "description": "A tactical turn-based naval strategy game in the Caribbean",
     "window_width": 1280,
     "window_height": 720,
     "fps": 60
@@ -12,16 +12,16 @@
   "teams": [
     {
       "id": 0,
-      "name": "Blue Alliance",
-      "description": "Player-controlled forces",
+      "name": "Blue Fleet",
+      "description": "Player-controlled fleet",
       "color": [100, 150, 255],
       "player_controlled": true,
       "turn_order": 0
     },
     {
       "id": 1,
-      "name": "Red Empire",
-      "description": "Enemy forces",
+      "name": "Red Armada",
+      "description": "Enemy fleet",
       "color": [255, 100, 100],
       "player_controlled": false,
       "turn_order": 1

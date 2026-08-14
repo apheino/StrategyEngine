@@ -106,8 +106,12 @@ class Grid:
         # MAP DATA
         # ========================================
         
-        # Icon cache: icon_id -> pygame.Surface
+        # Icon cache: icon_id -> pygame.Surface or list of surfaces (for animation)
         self.icons = {}
+        
+        # Animation tracking
+        self.animation_time = 0  # Cumulative time for animation
+        self.animation_speed = 0.15  # Seconds per frame
         
         # Map terrain data: 2D array of (icon_id, passability) tuples
         # Example: map_data[row][col] = (2, PASSABLE_EASY)
@@ -343,40 +347,80 @@ class Grid:
         """
         Load a terrain icon from file and cache it
         
-        Icons are loaded from resources/icons/ directory. Tries PNG first, then BMP.
+        Icons are loaded from resources/icons/ directory. Supports both static
+        and animated tiles. Animated tiles have frames named icon_name_frame_0.png, etc.
         Loaded icons are cached in self.icons dictionary to avoid reloading.
         
         Args:
-            icon_id (int): The icon number to load (e.g., 1 for icon_1.png)
+            icon_id (str or int): The icon identifier (e.g., "open_water" or 1 for icon_1.png)
         
         Returns:
-            pygame.Surface: Loaded icon image, or None if not found
+            pygame.Surface or list: Single image or list of frames for animation, or None if not found
         """
         # Check cache first
         if icon_id in self.icons:
             return self.icons[icon_id]
         
-        # Try loading PNG first (preferred format)
-        png_path = f"resources/icons/icon_{icon_id}.png"
-        if os.path.exists(png_path):
+        # If icon_id is a number, try old icon_N.png format
+        if isinstance(icon_id, int):
+            # Try loading PNG first (preferred format)
+            png_path = f"resources/icons/icon_{icon_id}.png"
+            if os.path.exists(png_path):
+                try:
+                    icon = pygame.image.load(png_path)
+                    self.icons[icon_id] = icon  # Cache for future use
+                    return icon
+                except pygame.error as e:
+                    print(f"Error loading {png_path}: {e}")
+            
+            # Fall back to BMP if PNG not found
+            bmp_path = f"resources/icons/icon_{icon_id}.bmp"
+            if os.path.exists(bmp_path):
+                try:
+                    icon = pygame.image.load(bmp_path)
+                    self.icons[icon_id] = icon  # Cache for future use
+                    return icon
+                except pygame.error as e:
+                    print(f"Error loading {bmp_path}: {e}")
+            
+            # Return None if icon not found
+            return None
+        
+        # String icon_id - try loading animated frames first
+        icon_name = str(icon_id)
+        frames = []
+        frame_index = 0
+        
+        # Try loading animation frames
+        while True:
+            frame_path = f"resources/icons/{icon_name}_frame_{frame_index}.png"
+            if os.path.exists(frame_path):
+                try:
+                    frame = pygame.image.load(frame_path)
+                    frames.append(frame)
+                    frame_index += 1
+                except pygame.error as e:
+                    print(f"Error loading {frame_path}: {e}")
+                    break
+            else:
+                break
+        
+        # If we found animated frames, cache and return them
+        if frames:
+            self.icons[icon_id] = frames
+            return frames
+        
+        # No animation frames found, try loading single static image
+        static_path = f"resources/icons/{icon_name}.png"
+        if os.path.exists(static_path):
             try:
-                icon = pygame.image.load(png_path)
+                icon = pygame.image.load(static_path)
                 self.icons[icon_id] = icon  # Cache for future use
                 return icon
             except pygame.error as e:
-                print(f"Error loading {png_path}: {e}")
+                print(f"Error loading {static_path}: {e}")
         
-        # Fall back to BMP if PNG not found
-        bmp_path = f"resources/icons/icon_{icon_id}.bmp"
-        if os.path.exists(bmp_path):
-            try:
-                icon = pygame.image.load(bmp_path)
-                self.icons[icon_id] = icon  # Cache for future use
-                return icon
-            except pygame.error as e:
-                print(f"Error loading {bmp_path}: {e}")
-        
-        # Return None if icon not found - will draw placeholder
+        # Return None if icon not found
         return None
     
     def load_map(self, map_file):
@@ -419,27 +463,78 @@ class Grid:
             return
         
         try:
+            # Terrain letter mapping for naval maps
+            terrain_letter_map = {
+                'W': (0, PASSABLE_EASY),        # open_water
+                'R': (1, PASSABLE_BLOCKED),     # reef
+                'J': (3, PASSABLE_BLOCKED),     # jungle_island
+                'B': (4, PASSABLE_SLOW),        # beach
+                'M': (2, PASSABLE_BLOCKED),     # rocky_island (mountain)
+                'D': (5, PASSABLE_EASY),        # deep_channel
+            }
+            
             with open(map_file, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    
-                    # Skip empty lines and comments
-                    if not line or line.startswith('#'):
-                        continue
-                    
-                    # Parse cells in this row
-                    row = []
-                    cells = line.split()  # Split on whitespace
-                    for cell in cells:
-                        if ',' in cell:
-                            # Format: "icon_id,passability"
-                            icon_id, passability = cell.split(',')
-                            row.append((int(icon_id), int(passability)))
-                        else:
-                            # Just icon_id - default to easy passability
-                            row.append((int(cell), PASSABLE_EASY))
-                    
-                    self.map_data.append(row)
+                lines = f.readlines()
+                
+                # Check if first line is dimensions (naval format)
+                first_line = lines[0].strip()
+                if ' ' in first_line and not ',' in first_line and not first_line.startswith('#'):
+                    # Naval format: "width height"
+                    try:
+                        width, height = map(int, first_line.split())
+                        
+                        # Parse letter-based terrain map
+                        for i in range(1, len(lines)):
+                            line = lines[i].strip()
+                            
+                            # Skip empty lines, comments, and legend
+                            if not line or line.startswith('#') or line.startswith('Legend'):
+                                continue
+                            
+                            # Check if this is a map row (all single letters)
+                            if all(c in terrain_letter_map or c.isspace() for c in line):
+                                row = []
+                                for char in line:
+                                    if char in terrain_letter_map:
+                                        row.append(terrain_letter_map[char])
+                                
+                                if row:
+                                    self.map_data.append(row)
+                            
+                            # Stop at legend
+                            if line.startswith('Legend'):
+                                break
+                        
+                    except (ValueError, IndexError):
+                        # Not naval format, fall through to old format
+                        pass
+                
+                # If naval format parsing succeeded, we're done
+                if self.map_data:
+                    pass
+                else:
+                    # Old format: parse as comma-separated values
+                    for line in lines:
+                        line = line.strip()
+                        
+                        # Skip empty lines and comments
+                        if not line or line.startswith('#'):
+                            continue
+                        
+                        # Parse cells in this row
+                        row = []
+                        cells = line.split()  # Split on whitespace
+                        for cell in cells:
+                            if ',' in cell:
+                                # Format: "icon_id,passability"
+                                icon_id, passability = cell.split(',')
+                                row.append((int(icon_id), int(passability)))
+                            else:
+                                # Just icon_id - default to easy passability
+                                row.append((int(cell), PASSABLE_EASY))
+                        
+                        if row:
+                            self.map_data.append(row)
             
             # Set grid dimensions from loaded data
             self.grid_height = len(self.map_data)
@@ -451,8 +546,17 @@ class Grid:
                 for icon_id, _ in row:
                     unique_icons.add(icon_id)
             
+            # Load terrain info to get icon names
+            terrain_info = self.load_terrain_info()
+            
             for icon_id in unique_icons:
-                self.load_icon(icon_id)
+                # If icon_id is in terrain_info, use the icon name
+                if str(icon_id) in terrain_info and 'icon' in terrain_info[str(icon_id)]:
+                    icon_name = terrain_info[str(icon_id)]['icon']
+                    self.load_icon(icon_name)
+                else:
+                    # Fall back to numeric icon loading
+                    self.load_icon(icon_id)
             
             print(f"Loaded map from {map_file}: {self.grid_height}x{self.grid_width}")
         
@@ -462,8 +566,27 @@ class Grid:
             for row in range(10):
                 self.map_data.append([(1, PASSABLE_EASY) for _ in range(10)])
             self.grid_height = 10
-            self.grid_width = 10
-    
+            self.grid_width = 10    
+    def load_terrain_info(self):
+        """
+        Load terrain information from terrains.json
+        
+        Returns:
+            dict: Terrain data mapping terrain_id -> {name, color, passability, icon}
+        """
+        terrain_file = "resources/terrains.json"
+        
+        if not os.path.exists(terrain_file):
+            return {}
+        
+        try:
+            with open(terrain_file, 'r') as f:
+                import json
+                terrain_data = json.load(f)
+                return terrain_data
+        except Exception as e:
+            print(f"Error loading terrain info from {terrain_file}: {e}")
+            return {}    
     def get_grid_world_size(self):
         """
         Get the total size of the grid in world units (unscaled pixels)
@@ -475,6 +598,15 @@ class Grid:
             tuple: (width, height) in world pixels
         """
         return (self.grid_width * self.cell_size, self.grid_height * self.cell_size)
+    
+    def update(self, dt):
+        """
+        Update animation timers
+        
+        Args:
+            dt (float): Delta time in seconds since last update
+        """
+        self.animation_time += dt
     
     def draw(self, screen):
         """
@@ -510,6 +642,9 @@ class Grid:
         # DRAW TERRAIN TILES
         # ========================================
         
+        # Load terrain info once for lookups
+        terrain_info = self.load_terrain_info()
+        
         # Draw each cell with its terrain icon
         for row in range(len(self.map_data)):
             for col in range(len(self.map_data[row])):
@@ -520,10 +655,25 @@ class Grid:
                 x = center_x + col * scaled_cell_size
                 y = center_y + row * scaled_cell_size
                 
-                # Get terrain icon from cache
-                icon = self.icons.get(icon_id)
+                # Look up icon name from terrain info
+                icon_key = icon_id
+                if str(icon_id) in terrain_info and 'icon' in terrain_info[str(icon_id)]:
+                    icon_key = terrain_info[str(icon_id)]['icon']
                 
-                if icon:
+                # Get terrain icon from cache
+                icon_data = self.icons.get(icon_key)
+                
+                if icon_data:
+                    # Check if this is an animated tile (list of frames) or static (single surface)
+                    if isinstance(icon_data, list):
+                        # Animated tile - calculate current frame
+                        num_frames = len(icon_data)
+                        current_frame = int(self.animation_time / self.animation_speed) % num_frames
+                        icon = icon_data[current_frame]
+                    else:
+                        # Static tile
+                        icon = icon_data
+                    
                     # Scale icon to current cell size (based on zoom)
                     scaled_icon = pygame.transform.scale(icon, 
                                                         (int(scaled_cell_size), 

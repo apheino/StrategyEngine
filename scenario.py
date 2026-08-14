@@ -416,6 +416,7 @@ class Scenario:
         Update all game logic for one frame
         
         Updates:
+        - Grid animation (for animated water tiles)
         - All unit animations and movement interpolation
         - All projectile positions and collision detection
         - Removes completed projectiles
@@ -424,6 +425,9 @@ class Scenario:
         Args:
             dt (float): Delta time in seconds since last frame
         """
+        # Update grid animations (water tiles, etc.)
+        self.grid.update(dt)
+        
         # Track which player units are moving before update
         player_units_moving = set()
         for unit in self.units:

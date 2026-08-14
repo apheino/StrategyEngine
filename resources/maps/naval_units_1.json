@@ -1,0 +1,44 @@
+{
+  "scenario": 1,
+  "description": "First encounter in Caribbean waters - Tutorial naval battle",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue Fleet",
+      "description": "Your command - Learn the basics of naval warfare",
+      "units": [
+        {
+          "type": "brigantine",
+          "row": 2,
+          "col": 3,
+          "name": "HMS Victory"
+        },
+        {
+          "type": "sloop",
+          "row": 4,
+          "col": 2,
+          "name": "Sea Sprite"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red Privateers",
+      "description": "Enemy raiders threatening the shipping lanes",
+      "units": [
+        {
+          "type": "sloop",
+          "row": 5,
+          "col": 22,
+          "name": "Crimson Tide"
+        },
+        {
+          "type": "sloop",
+          "row": 13,
+          "col": 20,
+          "name": "Blood Moon"
+        }
+      ]
+    }
+  ]
+}

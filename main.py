@@ -1007,6 +1007,23 @@ def main():
     The loop runs at the target FPS (60) until the user quits.
     State machine manages transitions between menus, story, and gameplay.
     """
+    # Show pirate-themed start menu first
+    from start_menu import StartMenu
+    menu = StartMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
+    action = menu.run()
+    
+    # Handle menu selection
+    if action == "QUIT":
+        pygame.quit()
+        sys.exit()
+        return
+    elif action == "NEW CAMPAIGN":
+        # TODO: Load pirate campaign
+        pass
+    elif action == "MAP EDITOR":
+        # TODO: Launch editor
+        pass
+    
     # Initialize main menu
     init_main_menu()
     

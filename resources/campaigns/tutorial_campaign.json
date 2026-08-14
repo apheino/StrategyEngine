@@ -1,7 +1,7 @@
 {
   "id": "tutorial_campaign",
-  "name": "Training Grounds",
-  "description": "Learn the basics of tactical combat through structured exercises",
+  "name": "Naval Academy",
+  "description": "Learn the basics of naval warfare through structured exercises",
   "scenarios": [
     {
       "scenario_number": 1,
@@ -9,10 +9,10 @@
       "unlock_condition": null,
       "briefing_override": [
         "TRAINING EXERCISE 1:",
-        "Movement and Positioning",
+        "Navigation and Positioning",
         "",
-        "Learn how to move your units effectively.",
-        "Objective: Defeat all enemy forces."
+        "Learn how to maneuver your ships effectively.",
+        "Objective: Sink all enemy vessels."
       ]
     },
     {
@@ -21,17 +21,17 @@
       "unlock_condition": "complete_1",
       "briefing_override": [
         "TRAINING EXERCISE 2:",
-        "Attacking Structures",
+        "Coastal Bombardment",
         "",
-        "Learn how to assault fortified positions.",
-        "Objective: Destroy all enemy structures."
+        "Learn how to assault fortified coastal positions.",
+        "Objective: Destroy all enemy fortifications."
       ]
     }
   ],
   "victory_text": [
     "Training Complete!",
     "",
-    "You are now ready for real combat.",
-    "Good luck, Commander!"
+    "You are now ready for real naval combat.",
+    "Good luck, Admiral!"
   ]
 }

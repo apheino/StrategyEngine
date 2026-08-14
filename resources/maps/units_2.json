@@ -8,77 +8,77 @@
       "description": "Player-controlled forces",
       "units": [
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 3,
           "col": 2
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 4,
           "col": 2
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 2,
           "col": 3
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 5,
           "col": 3
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 3,
           "col": 3
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 4,
           "col": 3
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 3,
           "col": 1
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 0,
           "col": 0
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 1,
           "col": 0
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 2,
           "col": 0
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 3,
           "col": 0
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 4,
           "col": 0
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 5,
           "col": 0
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 6,
           "col": 0
         },
         {
-          "type": "catapult",
+          "type": "frigate",
           "row": 7,
           "col": 0
         }
@@ -90,32 +90,32 @@
       "description": "Enemy forces",
       "units": [
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 3,
           "col": 12
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 4,
           "col": 12
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 2,
           "col": 11
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 5,
           "col": 11
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 3,
           "col": 11
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 4,
           "col": 11
         }

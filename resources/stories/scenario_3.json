@@ -1,26 +1,61 @@
 {
   "scenario_number": 3,
-  "title": "The Great Plains Battle",
+  "title": "Battle of the Three Islands",
   "intro_text": [
-    "The decisive battle has come.",
-    "Both armies have assembled on the vast plains.",
-    "Mountains and swamps dot the landscape.",
+    "The enemy has established control over three strategic islands.",
+    "These islands form a defensive triangle controlling the central Caribbean.",
     "",
-    "Objective: Eliminate all enemy forces.",
+    "Your mission: Break through their defensive line and eliminate all enemy ships.",
     "",
-    "This will be your greatest test. Command wisely."
+    "This is a large-scale engagement across open waters.",
+    "Use the deep channels to maneuver and divide their forces.",
+    "",
+    "The fate of the entire region hangs in the balance.",
+    "Show no mercy - send them all to Davy Jones' locker!"
   ],
   "victory_text": [
-    "VICTORY! The enemy army is defeated!",
-    "Your strategic mastery has secured total victory.",
+    "GLORIOUS VICTORY! The three islands are liberated!",
+    "",
+    "Your tactical brilliance has shattered the enemy's defensive line.",
+    "Enemy ships burn and sink across the entire battle area.",
+    "",
+    "The Caribbean waters are now dominated by your fleet.",
+    "Songs will be sung of this legendary naval triumph!",
+    "",
+    "You have proven yourself as one of the greatest admirals of the age."
+  ],
+  "defeat_text": [
+    "Crushing defeat. Your fleet has been decimated.",
+    "",
+    "The enemy's coordinated defense was too strong.",
+    "Survivors limp back to port with tales of disaster.",
+    "",
+    "The three islands remain under enemy control.",
+    "Return when you have mastered naval warfare."
+  ]
+}
+  "scenario_number": 3,
+  "title": "The Archipelago Campaign",
+  "intro_text": [
+    "The decisive naval battle has come.",
+    "Both fleets have assembled across the vast archipelago.",
+    "Rocky islands and treacherous reefs dot the seascape.",
+    "",
+    "Objective: Sink all enemy vessels.",
+    "",
+    "This will be your greatest test. Navigate wisely, Commander."
+  ],
+  "victory_text": [
+    "VICTORY! The enemy fleet is defeated!",
+    "Your strategic mastery has secured total naval supremacy.",
     "",
     "You have completed the campaign.",
     "",
-    "Well done, Commander!"
+    "Well done, Admiral!"
   ],
   "defeat_text": [
-    "The battle was lost.",
-    "Even the greatest commanders face defeat.",
+    "The battle was lost at sea.",
+    "Even the greatest admirals face defeat.",
     "",
     "Learn from this and try again."
   ]

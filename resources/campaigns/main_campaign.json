@@ -1,30 +1,91 @@
 {
   "id": "main_campaign",
-  "name": "Liberation War",
-  "description": "The main campaign following the Blue Alliance's fight for freedom",
+  "name": "Caribbean Liberation",
+  "description": "The Blue Fleet's fight for freedom of the Caribbean seas - a tale of naval mastery and strategic brilliance",
   "scenarios": [
     {
       "scenario_number": 1,
       "required": true,
-      "unlock_condition": null
+      "unlock_condition": null,
+      "briefing_override": [
+        "CARIBBEAN LIBERATION - Chapter 1",
+        "",
+        "Enemy privateers have been raiding our merchant convoys.",
+        "Your mission: Hunt them down and sink their ships.",
+        "",
+        "This is your first command, Admiral.",
+        "Show them the might of the Blue Fleet!",
+        "",
+        "Use WASD or Arrow Keys to move camera",
+        "Click ships to select, click destinations to move",
+        "Right-click enemies to attack"
+      ]
     },
     {
       "scenario_number": 2,
       "required": true,
-      "unlock_condition": "complete_1"
+      "unlock_condition": "complete_1",
+      "briefing_override": [
+        "CARIBBEAN LIBERATION - Chapter 2",
+        "",
+        "The enemy has fortified a strategic island.",
+        "Your fleet has been reinforced with powerful warships.",
+        "",
+        "Assault the fortress and break their defensive line.",
+        "Remember: Ships of the Line have superior firepower.",
+        "Frigates can bombard from long range.",
+        "",
+        "Victory here will open the central shipping lanes!"
+      ]
     },
     {
       "scenario_number": 3,
       "required": true,
-      "unlock_condition": "complete_2"
+      "unlock_condition": "complete_2",
+      "briefing_override": [
+        "CARIBBEAN LIBERATION - Chapter 3",
+        "",
+        "This is the decisive battle for Caribbean supremacy.",
+        "Three islands. Multiple enemy fleets. One outcome.",
+        "",
+        "The enemy has concentrated their forces.",
+        "Your tactical brilliance will determine the war's outcome.",
+        "",
+        "Use the deep channels to divide their forces.",
+        "Coordinate your ships for maximum effect.",
+        "",
+        "Good luck, Admiral. The Caribbean watches!"
+      ]
+    },
+    {
+      "scenario_number": 4,
+      "required": false,
+      "unlock_condition": "complete_3",
+      "briefing_override": [
+        "CARIBBEAN LIBERATION - Final Chapter",
+        "",
+        "The enemy's legendary admiral challenges you.",
+        "This is the ultimate test of naval warfare mastery.",
+        "",
+        "Defeat him and the Caribbean is ours!",
+        "",
+        "Optional: Complete this for the ultimate victory!"
+      ]
     }
   ],
   "victory_text": [
-    "Campaign Complete!",
+    "═══════════════════════════════════════════",
+    "CAMPAIGN COMPLETE!",
+    "═══════════════════════════════════════════",
     "",
-    "The Blue Alliance has achieved victory.",
-    "Peace returns to the land.",
+    "The Blue Fleet has achieved total naval supremacy.",
+    "The Caribbean seas are now free and safe.",
     "",
-    "Thank you for playing!"
+    "Your brilliant tactics have brought peace to the region.",
+    "You will be remembered as one of history's greatest admirals!",
+    "",
+    "Thank you for playing Caribbean Naval Warfare!",
+    "",
+    "═══════════════════════════════════════════"
   ]
 }

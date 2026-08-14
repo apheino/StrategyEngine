@@ -13,7 +13,7 @@ Each unit has:
 Animation System:
 - Health-based variants: Idle, move, and attack have different animations at full/damaged/critical health
 - Naming convention: {unit}_{animation}_{health%}_{frame}.png
-  - Example: soldier_idle_100_0.png (full health), soldier_idle_50_0.png (50% health)
+  - Example: sloop_idle_100_0.png (full health), sloop_idle_50_0.png (50% health)
 - Non-health animations: hurt and death don't have health variants
 - Automatic selection: Unit automatically uses appropriate animation based on current health percentage
 
@@ -35,7 +35,7 @@ class Unit:
     """
     Game unit with stats, animations, and combat capabilities
     
-    Represents a single unit on the battlefield (soldier, archer, knight, etc.).
+    Represents a single ship on the battlefield (sloop, brigantine, ship of the line, etc.).
     Handles all unit behavior including movement, combat, animations, and state management.
     
     Key Features:
@@ -48,7 +48,7 @@ class Unit:
     - Projectile support for ranged attacks
     
     Attributes:
-        unit_type (str): Type identifier (e.g., "soldier", "archer", "knight")
+        unit_type (str): Type identifier (e.g., "sloop", "brigantine", "frigate")
         team (int): Team/player number (0=player, 1=enemy, 2+=other)
         position (tuple): Current grid position as (row, col)
         health (int): Current hit points
@@ -62,7 +62,7 @@ class Unit:
         projectile_speed (float): Projectile flight speed (0=melee, >0=ranged)
     """
     
-    def __init__(self, unit_type="soldier", team=0, position=(0, 0)):
+    def __init__(self, unit_type="sloop", team=0, position=(0, 0)):
         """
         Initialize a new unit with default or file-loaded attributes
         
@@ -78,7 +78,7 @@ class Unit:
         # BASIC IDENTITY
         # ========================================
         
-        self.unit_type = unit_type  # "soldier", "archer", "knight", etc.
+        self.unit_type = unit_type  # "sloop", "brigantine", "frigate", etc.
         self.team = team            # 0 = player, 1 = enemy, 2+ = other
         self.position = position    # (row, col) on grid
         

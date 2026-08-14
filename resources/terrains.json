@@ -1,62 +1,62 @@
 {
   "0": {
-    "name": "Grass",
-    "color": [
-      34,
-      139,
-      34
-    ],
-    "passability": 0,
-    "icon": "grass"
-  },
-  "1": {
-    "name": "Water",
+    "name": "Open Water",
     "color": [
       0,
       105,
       148
     ],
+    "passability": 0,
+    "icon": "open_water"
+  },
+  "1": {
+    "name": "Reef",
+    "color": [
+      0,
+      139,
+      139
+    ],
     "passability": 2,
-    "icon": "water"
+    "icon": "reef"
   },
   "2": {
-    "name": "Mountain",
+    "name": "Rocky Island",
     "color": [
       139,
       90,
       43
     ],
     "passability": 2,
-    "icon": "mountain"
+    "icon": "rocky_island"
   },
   "3": {
-    "name": "Forest",
+    "name": "Jungle Island",
     "color": [
       0,
       100,
       0
     ],
     "passability": 1,
-    "icon": "forest"
+    "icon": "jungle_island"
   },
   "4": {
-    "name": "Sand",
+    "name": "Beach",
     "color": [
       238,
       214,
       175
     ],
     "passability": 0,
-    "icon": "sand"
+    "icon": "beach"
   },
   "5": {
-    "name": "Road",
+    "name": "Deep Channel",
     "color": [
-      169,
-      169,
-      169
+      0,
+      75,
+      110
     ],
     "passability": 0,
-    "icon": "road"
+    "icon": "deep_channel"
   }
 }

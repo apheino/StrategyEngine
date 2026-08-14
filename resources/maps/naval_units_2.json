@@ -1,0 +1,95 @@
+{
+  "scenario": 2,
+  "description": "Island fortress assault with diverse fleet",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue Fleet",
+      "description": "Your reinforced naval squadron",
+      "units": [
+        {
+          "type": "ship_of_the_line",
+          "row": 3,
+          "col": 2,
+          "name": "HMS Dreadnought"
+        },
+        {
+          "type": "brigantine",
+          "row": 4,
+          "col": 3,
+          "name": "Swift Wind"
+        },
+        {
+          "type": "brigantine",
+          "row": 5,
+          "col": 3,
+          "name": "Sea Falcon"
+        },
+        {
+          "type": "frigate",
+          "row": 6,
+          "col": 2,
+          "name": "Thunder"
+        },
+        {
+          "type": "sloop",
+          "row": 2,
+          "col": 4,
+          "name": "Ranger"
+        },
+        {
+          "type": "sloop",
+          "row": 7,
+          "col": 4,
+          "name": "Scout"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red Empire",
+      "description": "Fortress defenders with powerful fleet",
+      "units": [
+        {
+          "type": "ship_of_the_line",
+          "row": 14,
+          "col": 22,
+          "name": "Imperial Pride"
+        },
+        {
+          "type": "brigantine",
+          "row": 15,
+          "col": 20,
+          "name": "Crimson Wave"
+        },
+        {
+          "type": "brigantine",
+          "row": 16,
+          "col": 24,
+          "name": "Red Storm"
+        },
+        {
+          "type": "sloop",
+          "row": 13,
+          "col": 21,
+          "name": "Scarlet"
+        },
+        {
+          "type": "sloop",
+          "row": 17,
+          "col": 22,
+          "name": "Vermillion"
+        }
+      ]
+    }
+  ],
+  "structures": [
+    {
+      "type": "naval_fort",
+      "row": 15,
+      "col": 22,
+      "team": 1,
+      "name": "Fort Crimson"
+    }
+  ]
+}

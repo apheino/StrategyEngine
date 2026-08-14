@@ -1,0 +1,6 @@
+{
+  "max_health": 100,
+  "defense": 5,
+  "is_base": false,
+  "description": "Coastal Battery. Shore-mounted cannon emplacement that provides defensive fire support."
+}

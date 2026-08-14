@@ -1,0 +1,38 @@
+{
+  "title": "Humble Beginnings",
+  "intro": [
+    "The sun rises over the Caribbean, painting the waves gold...",
+    "",
+    "You stand at the helm of your newly stolen sloop, the 'Sea Rat'.",
+    "The previous owner lies tied up below deck - he won't be needing his ship anymore.",
+    "",
+    "Word has reached you of a small merchant convoy passing through these waters.",
+    "Three fat merchant ships, ripe for the taking.",
+    "Their holds are filled with Spanish gold, and their guns are few.",
+    "",
+    "This is your chance. Prove yourself worthy of the pirate's life!",
+    "",
+    "Your crew awaits your orders, Captain..."
+  ],
+  "victory": [
+    "The merchant ships burn and sink, their precious cargo now yours!",
+    "",
+    "Your crew cheers as they count the plundered gold: 800 pieces!",
+    "The survivors flee in a lifeboat, carrying tales of your ferocity.",
+    "",
+    "You've taken your first step toward legend.",
+    "",
+    "But this is only the beginning...",
+    "Greater prizes await those brave - or foolish - enough to pursue them."
+  ],
+  "defeat": [
+    "The Sea Rat sinks beneath the waves, your dreams sinking with it...",
+    "",
+    "The merchant guards were more prepared than you thought.",
+    "Their cannons found their mark, and your crew abandons ship.",
+    "",
+    "You cling to floating wreckage, watching your ship disappear.",
+    "",
+    "Perhaps the pirate's life is not for you after all..."
+  ]
+}

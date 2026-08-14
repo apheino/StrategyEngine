@@ -1,0 +1,55 @@
+{
+  "name": "Island Fortress",
+  "description": "A massive stone fortress built on a strategic island. Can bombard ships at long range and withstand heavy damage.",
+  "max_hp": 500,
+  "build_cost": 5000,
+  "build_time": 0,
+  "size": [3, 3],
+  "provides": ["defense", "territory_control", "cannon_platform"],
+  "abilities": [
+    {
+      "name": "Heavy Cannon Barrage",
+      "description": "Fire all cannons at enemy ships",
+      "range": 8,
+      "damage": 40,
+      "cooldown": 2,
+      "area_effect": true,
+      "projectile": "cannonball"
+    },
+    {
+      "name": "Defensive Walls",
+      "description": "Reduces damage taken by 50%",
+      "passive": true
+    }
+  ],
+  "capture_mechanics": {
+    "can_be_captured": true,
+    "capture_points_required": 100,
+    "capture_rate_per_turn": 10,
+    "capture_requirements": "Must have friendly unit adjacent and no enemies within range 2",
+    "capture_rewards": {
+      "gold": 2000,
+      "territory": "island_control"
+    }
+  },
+  "garrison": {
+    "has_garrison": true,
+    "max_garrison_units": 3,
+    "spawns_defenders": true,
+    "defender_types": ["sloop", "coastal_battery"]
+  },
+  "visual": {
+    "sprite": "island_fortress.png",
+    "animations": {
+      "idle": "fortress_idle",
+      "attacking": "fortress_fire",
+      "damaged": "fortress_damaged",
+      "destroyed": "fortress_ruins"
+    }
+  },
+  "strategic_value": {
+    "controls_area": 5,
+    "provides_gold_per_turn": 100,
+    "blocks_passage": true
+  }
+}

@@ -7,8 +7,8 @@
       "name": "Blue Alliance",
       "description": "Player forces",
       "units": [
-        {"type": "soldier", "row": 2, "col": 2},
-        {"type": "archer", "row": 3, "col": 2}
+        {"type": "sloop", "row": 2, "col": 2},
+        {"type": "brigantine", "row": 3, "col": 2}
       ]
     },
     {
@@ -16,13 +16,13 @@
       "name": "Red Legion",
       "description": "Enemy forces",
       "units": [
-        {"type": "soldier", "row": 7, "col": 12}
+        {"type": "sloop", "row": 7, "col": 12}
       ]
     }
   ],
   "structures": [
-    {"type": "headquarters", "row": 1, "col": 12, "team": 1},
-    {"type": "hangar", "row": 5, "col": 7, "team": 1},
-    {"type": "sandbag", "row": 4, "col": 5, "team": null}
+    {"type": "naval_fort", "row": 1, "col": 12, "team": 1},
+    {"type": "shipyard", "row": 5, "col": 7, "team": 1},
+    {"type": "coastal_battery", "row": 4, "col": 5, "team": null}
   ]
 }

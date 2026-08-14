@@ -1,0 +1,198 @@
+{
+  "name": "Rise of the Pirate King",
+  "description": "Start with a single sloop and fight your way to dominate the Caribbean as the ultimate Pirate King!",
+  "starting_gold": 500,
+  "ship_costs": {
+    "sloop": 500,
+    "brigantine": 1500,
+    "ship_of_the_line": 5000,
+    "frigate": 3000
+  },
+  "scenarios": [
+    {
+      "id": "pirate_01",
+      "name": "Humble Beginnings",
+      "description": "You've stolen your first sloop and need to prove yourself. Raid a small merchant convoy to earn your first gold.",
+      "story_file": "stories/pirate_01_beginnings.json",
+      "map": "maps/pirate_map_1.txt",
+      "units_file": "maps/pirate_units_1.json",
+      "starting_fleet": [
+        {"type": "sloop", "count": 1}
+      ],
+      "objectives": [
+        "Defeat all enemy merchant ships",
+        "Capture at least 800 gold"
+      ],
+      "gold_reward": 800,
+      "victory_condition": "eliminate_enemy",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 1
+    },
+    {
+      "id": "pirate_02",
+      "name": "First Conquest",
+      "description": "With some gold in your pocket, upgrade your fleet and attack a small coastal settlement protected by a naval fort.",
+      "story_file": "stories/pirate_02_conquest.json",
+      "map": "maps/pirate_map_2.txt",
+      "units_file": "maps/pirate_units_2.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine"],
+      "objectives": [
+        "Destroy the coastal fortress",
+        "Eliminate all defenders"
+      ],
+      "gold_reward": 1500,
+      "victory_condition": "destroy_fortress",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 2
+    },
+    {
+      "id": "pirate_03",
+      "name": "Island Chain Raid",
+      "description": "A chain of wealthy islands lies undefended. Raid them all before the Royal Navy arrives!",
+      "story_file": "stories/pirate_03_raid.json",
+      "map": "maps/pirate_map_3.txt",
+      "units_file": "maps/pirate_units_3.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine"],
+      "turn_limit": 15,
+      "objectives": [
+        "Capture 3 island settlements",
+        "Complete before turn 15"
+      ],
+      "gold_reward": 2000,
+      "victory_condition": "capture_islands",
+      "defeat_condition": "timeout_or_death",
+      "difficulty": 3
+    },
+    {
+      "id": "pirate_04",
+      "name": "Rival Pirates",
+      "description": "Another pirate crew is threatening your territory. Show them who rules these waters!",
+      "story_file": "stories/pirate_04_rivals.json",
+      "map": "maps/pirate_map_4.txt",
+      "units_file": "maps/pirate_units_4.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine", "frigate"],
+      "objectives": [
+        "Defeat the rival pirate fleet",
+        "Capture their stronghold"
+      ],
+      "gold_reward": 3000,
+      "victory_condition": "eliminate_enemy",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 4
+    },
+    {
+      "id": "pirate_05",
+      "name": "The Armada Approaches",
+      "description": "The Spanish Armada has been sent to crush you. Use the archipelago's narrow channels to your advantage!",
+      "story_file": "stories/pirate_05_armada.json",
+      "map": "maps/pirate_map_5.txt",
+      "units_file": "maps/pirate_units_5.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine", "ship_of_the_line", "frigate"],
+      "objectives": [
+        "Defeat the Spanish Armada",
+        "Defend your captured islands"
+      ],
+      "gold_reward": 5000,
+      "victory_condition": "eliminate_enemy",
+      "defeat_condition": "lose_islands",
+      "difficulty": 5
+    },
+    {
+      "id": "pirate_06",
+      "name": "Fortress Siege",
+      "description": "The Governor's heavily fortified island fortress is the key to controlling the entire region. Prepare for a long siege!",
+      "story_file": "stories/pirate_06_siege.json",
+      "map": "maps/pirate_map_6.txt",
+      "units_file": "maps/pirate_units_6.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine", "ship_of_the_line", "frigate"],
+      "objectives": [
+        "Destroy all fortress defenses",
+        "Capture the island fortress"
+      ],
+      "gold_reward": 7000,
+      "victory_condition": "capture_fortress",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 6
+    },
+    {
+      "id": "pirate_07",
+      "name": "Naval Blockade",
+      "description": "The Royal Navy has blockaded the main trade routes. Break through and seize control of the shipping lanes!",
+      "story_file": "stories/pirate_07_blockade.json",
+      "map": "maps/pirate_map_7.txt",
+      "units_file": "maps/pirate_units_7.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine", "ship_of_the_line", "frigate"],
+      "objectives": [
+        "Destroy the blockading fleet",
+        "Control all 4 strategic channels"
+      ],
+      "gold_reward": 8000,
+      "victory_condition": "control_channels",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 7
+    },
+    {
+      "id": "pirate_08",
+      "name": "The Pirate Alliance",
+      "description": "Unite with other pirate captains to create an unstoppable armada. Together, you'll rule the Caribbean!",
+      "story_file": "stories/pirate_08_alliance.json",
+      "map": "maps/pirate_map_8.txt",
+      "units_file": "maps/pirate_units_8.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine", "ship_of_the_line", "frigate"],
+      "ally_reinforcements": true,
+      "objectives": [
+        "Unite 3 pirate crews under your command",
+        "Defeat the combined colonial forces"
+      ],
+      "gold_reward": 10000,
+      "victory_condition": "unite_and_conquer",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 8
+    },
+    {
+      "id": "pirate_09",
+      "name": "Clash of Titans",
+      "description": "The legendary Admiral Blackwood commands the most powerful fleet ever assembled. Only the strongest can prevail!",
+      "story_file": "stories/pirate_09_titans.json",
+      "map": "maps/pirate_map_9.txt",
+      "units_file": "maps/pirate_units_9.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine", "ship_of_the_line", "frigate"],
+      "objectives": [
+        "Defeat Admiral Blackwood's flagship",
+        "Destroy the elite Royal Navy fleet"
+      ],
+      "gold_reward": 12000,
+      "victory_condition": "eliminate_flagship",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 9
+    },
+    {
+      "id": "pirate_10",
+      "name": "Rise of the Pirate King",
+      "description": "The final battle for Caribbean supremacy. The old Pirate King challenges your claim. Defeat him and take your throne!",
+      "story_file": "stories/pirate_10_final.json",
+      "map": "maps/pirate_map_10_final.txt",
+      "units_file": "maps/pirate_units_10.json",
+      "starting_fleet": "player_choice",
+      "available_units": ["sloop", "brigantine", "ship_of_the_line", "frigate"],
+      "objectives": [
+        "Defeat the Pirate King's legendary fleet",
+        "Capture his fortress stronghold",
+        "Become the new Pirate King of the Caribbean"
+      ],
+      "gold_reward": 20000,
+      "victory_condition": "become_pirate_king",
+      "defeat_condition": "lose_all_units",
+      "difficulty": 10,
+      "final_scenario": true
+    }
+  ]
+}

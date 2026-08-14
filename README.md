@@ -1,8 +1,8 @@
-# Combat Alley 2000
+# Caribbean Naval Warfare
 
-A turn-based strategy game built with Python and Pygame featuring grid-based combat, unit management, and tactical gameplay.
+A turn-based naval strategy game built with Python and Pygame featuring grid-based ship combat, fleet management, and tactical naval warfare in the Caribbean archipelago.
 
-**🎮 Strategy Game Engine** - Create your own strategy games without coding!
+**🚢 Naval Strategy Game Engine** - Create your own strategy games without coding!
 
 ## Create Your Own Game
 
@@ -48,6 +48,20 @@ python main.py    # Play your game
 - ✅ **State machine architecture** for clean state management
 
 ### Core Systems
+
+### 🤖 Intelligent Enemy AI
+
+The game features a sophisticated AI system that provides challenging opposition:
+
+- **Smart Target Selection:** AI prioritizes wounded enemies (+50 priority < 30% HP), high-damage threats, and units within attack range
+- **Fleet Coordination:** Multiple enemy ships work together using focus fire tactics and mutual support
+- **Tactical Awareness:** AI maintains optimal combat range, uses terrain advantages, and retreats when badly damaged
+- **Adaptive Difficulty:** Scales from Easy (basic behavior) to Pirate King (perfect execution) with 10 difficulty levels
+- **Strategic Planning:** AI evaluates fleet strength and adapts strategy (aggressive when winning, defensive when losing)
+
+📖 **[Read full AI behavior documentation →](docs/AI_BEHAVIOR.md)**
+
+### Core Gameplay Systems
 - ✅ **Grid-based map system** with customizable terrain
 - ✅ **Pathfinding system** (BFS) for realistic movement around obstacles
 - ✅ **Fog of war** with vision range and tactical visibility

@@ -8,8 +8,8 @@
       "name": "Blue",
       "description": "Player team (bottom)",
       "units": [
-        {"type": "soldier", "row": 8, "col": 4},
-        {"type": "archer", "row": 8, "col": 5}
+        {"type": "sloop", "row": 8, "col": 4},
+        {"type": "brigantine", "row": 8, "col": 5}
       ]
     },
     {
@@ -17,8 +17,8 @@
       "name": "Red",
       "description": "Tutorial opponent (top)",
       "units": [
-        {"type": "soldier", "row": 1, "col": 4},
-        {"type": "archer", "row": 1, "col": 5}
+        {"type": "sloop", "row": 1, "col": 4},
+        {"type": "brigantine", "row": 1, "col": 5}
       ]
     }
   ]

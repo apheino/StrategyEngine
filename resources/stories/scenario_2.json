@@ -1,22 +1,53 @@
 {
   "scenario_number": 2,
-  "title": "The Narrow Valley",
+  "title": "Island Fortress Assault",
   "intro_text": [
-    "The enemy has retreated to a narrow valley.",
-    "Their position is defensible but limited in space.",
+    "Intelligence reports that enemy forces have fortified a strategic island.",
+    "The fortress commands the approach to the main shipping lanes.",
     "",
-    "Objective: Eliminate all enemy forces.",
+    "Your fleet has been reinforced with additional ships.",
+    "You now command sloops, brigantines, ships of the line, and frigates.",
     "",
-    "Use the terrain to your advantage and outmaneuver them."
+    "Objective: Destroy the enemy fleet and capture the island.",
+    "",
+    "Use your ship diversity wisely - each vessel has unique strengths!"
   ],
   "victory_text": [
-    "Excellent! The valley has been secured.",
-    "The enemy's defensive advantage was overcome by superior tactics.",
+    "VICTORY! The fortress falls and the island is secured!",
     "",
-    "Your reputation grows."
+    "Your coordinated naval assault has overwhelmed the defenders.",
+    "The shipping lanes are now under your protection.",
+    "",
+    "Your reputation as a master naval tactician grows.",
+    "The fleet awaits your next orders, Admiral."
   ],
   "defeat_text": [
-    "The narrow terrain proved too challenging.",
+    "Defeat! The fortress guns proved too powerful.",
+    "",
+    "Your ships have been driven back with heavy losses.",
+    "The enemy still controls the strategic position.",
+    "",
+    "Regroup at the home port and plan a new approach."
+  ]
+}
+  "scenario_number": 2,
+  "title": "The Narrow Strait",
+  "intro_text": [
+    "The enemy has retreated to a narrow strait between islands.",
+    "Their position is defensible but limited in maneuvering space.",
+    "",
+    "Objective: Sink all enemy vessels.",
+    "",
+    "Use the channels and islands to your advantage and outmaneuver them."
+  ],
+  "victory_text": [
+    "Excellent! The strait has been secured.",
+    "The enemy's defensive advantage was overcome by superior seamanship.",
+    "",
+    "Your reputation as a naval commander grows."
+  ],
+  "defeat_text": [
+    "The narrow waters proved too challenging.",
     "",
     "Consider a different approach next time."
   ]

@@ -1,24 +1,71 @@
 {
   "scenario_number": 4,
-  "title": "Siege Warfare",
+  "title": "The Admiral's Challenge",
   "intro_text": [
-    "The enemy has fortified their position with structures.",
-    "A headquarters, hangar, and defensive sandbags block your path.",
+    "Your victories have drawn the attention of the enemy's most feared admiral.",
+    "He commands a powerful armada of elite warships.",
     "",
-    "Objective: Destroy all enemy structures.",
+    "This is no ordinary battle - this is a test of supreme naval mastery.",
     "",
-    "Use concentrated fire to breach their defenses."
+    "The enemy admiral is a tactical genius with decades of experience.",
+    "His fleet moves with perfect coordination.",
+    "Every captain under his command is a veteran of countless battles.",
+    "",
+    "Objective: Sink the enemy flagship and destroy his elite fleet.",
+    "",
+    "Only the most skilled tactician will emerge victorious.",
+    "Fortune favors the bold, Admiral!"
+  ],
+  "victory_text": [
+    "═══════════════════════════════════════════",
+    "LEGENDARY VICTORY!",
+    "═══════════════════════════════════════════",
+    "",
+    "The enemy admiral's flagship sinks beneath the waves!",
+    "His elite armada has been utterly destroyed.",
+    "",
+    "You have achieved what many thought impossible.",
+    "The most feared naval commander has been defeated.",
+    "",
+    "Your name will echo through history.",
+    "You are now recognized as the supreme master of naval warfare!",
+    "",
+    "The Caribbean seas bow to your command, Admiral.",
+    "",
+    "═══════════════════════════════════════════",
+    "CAMPAIGN COMPLETE!",
+    "═══════════════════════════════════════════"
+  ],
+  "defeat_text": [
+    "Defeat at the hands of a master.",
+    "",
+    "The enemy admiral's tactical superiority was evident.",
+    "Your fleet has been outmaneuvered and outfought.",
+    "",
+    "Perhaps you are not yet ready for this challenge.",
+    "Study naval tactics further and return when prepared."
+  ]
+}
+  "scenario_number": 4,
+  "title": "Fortress Bombardment",
+  "intro_text": [
+    "The enemy has fortified the harbor with coastal structures.",
+    "A naval fort, shipyard, and coastal batteries block your approach.",
+    "",
+    "Objective: Destroy all enemy fortifications.",
+    "",
+    "Use concentrated bombardment to breach their defenses."
   ],
   "victory_text": [
     "Success! The fortifications have been destroyed.",
-    "You have mastered siege warfare.",
+    "You have mastered naval siege warfare.",
     "",
-    "Enemy structures are no longer an obstacle."
+    "Enemy coastal defenses are no longer an obstacle."
   ],
   "defeat_text": [
-    "The fortifications held.",
+    "The fortifications held strong.",
     "",
-    "Structures require sustained attacks to destroy.",
+    "Coastal structures require sustained naval bombardment.",
     "Try again with better positioning."
   ]
 }

@@ -1,0 +1,17 @@
+{
+  "name": "Sloop",
+  "description": "Balanced merchant vessel armed for combat. Versatile warship: medium durability, medium firepower, medium speed",
+  "max_health": 100,
+  "attack_power": 22,
+  "defense": 6,
+  "attack_range": 1,
+  "max_mobility": 3,
+  "speed": 2.0,
+  "projectile_speed": 0.0,
+  "projectile_count": 1,
+  "projectile_sprite": null,
+  "hit_chance": 0.95,
+  "damage_std": 3.0,
+  "fire_type": "direct",
+  "vision_range": 5
+}

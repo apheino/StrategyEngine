@@ -1,0 +1,41 @@
+{
+  "player_units": [
+    {
+      "type": "sloop",
+      "position": [5, 24],
+      "team": "player",
+      "name": "Sea Rat",
+      "level": 1
+    }
+  ],
+  "enemy_units": [
+    {
+      "type": "sloop",
+      "position": [20, 5],
+      "team": "enemy",
+      "name": "Merchant Gold",
+      "level": 1,
+      "ai_behavior": "defensive",
+      "cargo_gold": 300
+    },
+    {
+      "type": "sloop",
+      "position": [22, 7],
+      "team": "enemy",
+      "name": "Merchant Silver",
+      "level": 1,
+      "ai_behavior": "flee",
+      "cargo_gold": 250
+    },
+    {
+      "type": "sloop",
+      "position": [24, 6],
+      "team": "enemy",
+      "name": "Merchant Spice",
+      "level": 1,
+      "ai_behavior": "flee",
+      "cargo_gold": 250
+    }
+  ],
+  "neutral_structures": []
+}

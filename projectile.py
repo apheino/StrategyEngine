@@ -2,7 +2,7 @@
 Projectile class for ranged attacks
 
 This module implements projectiles that travel from an attacker to a target.
-Projectiles are used for ranged attacks (e.g., arrows from archers) and provide
+Projectiles are used for ranged attacks (e.g., cannonballs from brigantines) and provide
 visual feedback for attacks with range > 1.
 
 Key features:

@@ -1,0 +1,17 @@
+{
+  "name": "Ship of the Line",
+  "description": "Massive warship with heavy armor and devastating broadside. Capital ship: highest durability and firepower, powerful attack, very slow",
+  "max_health": 150,
+  "attack_power": 30,
+  "defense": 12,
+  "attack_range": 1,
+  "max_mobility": 2,
+  "speed": 1.8,
+  "projectile_speed": 0.0,
+  "projectile_count": 1,
+  "projectile_sprite": null,
+  "hit_chance": 0.98,
+  "damage_std": 4.0,
+  "fire_type": "direct",
+  "vision_range": 4
+}

@@ -106,12 +106,12 @@ def get_available_unit_types():
     """Get list of available unit types from resources/units/ directory"""
     unit_dir = Path("resources/units")
     if not unit_dir.exists():
-        return ["soldier", "archer", "knight", "catapult"]  # Fallback
+        return ["sloop", "brigantine", "ship_of_the_line", "frigate"]  # Fallback
     
     unit_types = []
     for file in unit_dir.glob("*.json"):
         unit_types.append(file.stem)
-    return sorted(unit_types) if unit_types else ["soldier", "archer", "knight", "catapult"]
+    return sorted(unit_types) if unit_types else ["sloop", "brigantine", "ship_of_the_line", "frigate"]
 
 UNIT_TYPES = get_available_unit_types()
 

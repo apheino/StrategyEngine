@@ -1,0 +1,6 @@
+{
+  "max_health": 500,
+  "defense": 20,
+  "is_base": true,
+  "description": "Naval Fort. Heavily fortified coastal fortress that serves as the fleet's main base of operations."
+}

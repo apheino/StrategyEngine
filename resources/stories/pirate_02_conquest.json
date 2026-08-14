@@ -1,0 +1,41 @@
+{
+  "title": "First Conquest",
+  "intro": [
+    "With gold in your coffers, you've upgraded your fleet.",
+    "",
+    "The small island of Porto Seguro stands before you.",
+    "A modest settlement defended by a single coastal fortress.",
+    "Its cannons command the harbor approaches.",
+    "",
+    "The Spanish colonists grow wealthy from their plantations and trade.",
+    "They've never faced a determined pirate attack.",
+    "",
+    "Time to change that.",
+    "",
+    "Take the fortress. Show them that nowhere is safe from your ambition!"
+  ],
+  "victory": [
+    "The fortress walls crumble under your relentless bombardment!",
+    "",
+    "Spanish soldiers flee inland as your crews storm ashore.",
+    "The settlement's treasury is yours: 1500 gold pieces!",
+    "",
+    "Porto Seguro is now under your control.",
+    "Your first permanent base of operations.",
+    "",
+    "Word of your victory spreads across the Caribbean.",
+    "The name on everyone's lips: Captain of the Sea Rat.",
+    "",
+    "But greater conquests call..."
+  ],
+  "defeat": [
+    "The fortress guns prove too powerful!",
+    "",
+    "Your ships are battered and broken by the coastal batteries.",
+    "You're forced to retreat, leaving the dead behind.",
+    "",
+    "Porto Seguro remains in Spanish hands.",
+    "",
+    "Perhaps you need better ships... or a better plan."
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "scenario": 3,
+  "description": "Large-scale battle of the three islands",
+  "teams": [
+    {
+      "id": 0,
+      "name": "Blue Fleet",
+      "description": "Your powerful armada",
+      "units": [
+        {
+          "type": "ship_of_the_line",
+          "row": 4,
+          "col": 3,
+          "name": "HMS Sovereign"
+        },
+        {
+          "type": "ship_of_the_line",
+          "row": 5,
+          "col": 4,
+          "name": "HMS Invincible"
+        },
+        {
+          "type": "frigate",
+          "row": 3,
+          "col": 4,
+          "name": "Thunderbolt"
+        },
+        {
+          "type": "frigate",
+          "row": 6,
+          "col": 4,
+          "name": "Lightning"
+        },
+        {
+          "type": "brigantine",
+          "row": 4,
+          "col": 2,
+          "name": "Swift Arrow"
+        },
+        {
+          "type": "brigantine",
+          "row": 5,
+          "col": 2,
+          "name": "Sea Hawk"
+        },
+        {
+          "type": "brigantine",
+          "row": 4,
+          "col": 6,
+          "name": "Wind Dancer"
+        },
+        {
+          "type": "sloop",
+          "row": 3,
+          "col": 2,
+          "name": "Scout Alpha"
+        },
+        {
+          "type": "sloop",
+          "row": 6,
+          "col": 2,
+          "name": "Scout Beta"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Red Empire",
+      "description": "Enemy forces defending three strategic islands",
+      "units": [
+        {
+          "type": "ship_of_the_line",
+          "row": 19,
+          "col": 27,
+          "name": "Emperor's Wrath"
+        },
+        {
+          "type": "ship_of_the_line",
+          "row": 20,
+          "col": 26,
+          "name": "Crimson King"
+        },
+        {
+          "type": "frigate",
+          "row": 18,
+          "col": 26,
+          "name": "Red Thunder"
+        },
+        {
+          "type": "frigate",
+          "row": 21,
+          "col": 27,
+          "name": "Scarlet Storm"
+        },
+        {
+          "type": "brigantine",
+          "row": 19,
+          "col": 25,
+          "name": "Blood Tide"
+        },
+        {
+          "type": "brigantine",
+          "row": 20,
+          "col": 28,
+          "name": "Red Corsair"
+        },
+        {
+          "type": "brigantine",
+          "row": 18,
+          "col": 28,
+          "name": "Crimson Blade"
+        },
+        {
+          "type": "sloop",
+          "row": 17,
+          "col": 26,
+          "name": "Ruby"
+        },
+        {
+          "type": "sloop",
+          "row": 22,
+          "col": 27,
+          "name": "Garnet"
+        }
+      ]
+    }
+  ],
+  "structures": [
+    {
+      "type": "naval_fort",
+      "row": 4,
+      "col": 7,
+      "team": 1,
+      "name": "Fort North"
+    },
+    {
+      "type": "coastal_battery",
+      "row": 19,
+      "col": 26,
+      "team": 1,
+      "name": "South Battery"
+    },
+    {
+      "type": "shipyard",
+      "row": 25,
+      "col": 6,
+      "team": 1,
+      "name": "West Shipyard"
+    }
+  ]
+}

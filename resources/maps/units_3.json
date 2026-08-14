@@ -8,182 +8,182 @@
       "description": "Player-controlled forces",
       "units": [
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 45,
           "col": 15
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 48,
           "col": 15
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 51,
           "col": 15
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 54,
           "col": 15
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 45,
           "col": 20
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 48,
           "col": 20
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 51,
           "col": 20
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 54,
           "col": 20
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 45,
           "col": 12
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 54,
           "col": 12
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 42,
           "col": 18
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 57,
           "col": 18
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 40,
           "col": 22
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 59,
           "col": 22
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 50,
           "col": 10
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 47,
           "col": 45
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 47,
           "col": 50
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 47,
           "col": 55
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 53,
           "col": 45
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 53,
           "col": 50
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 50,
           "col": 43
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 50,
           "col": 48
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 50,
           "col": 52
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 50,
           "col": 57
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 45,
           "col": 50
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 55,
           "col": 50
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 50,
           "col": 40
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 50,
           "col": 60
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 53,
           "col": 55
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 50,
           "col": 53
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 51,
           "col": 53
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 52,
           "col": 53
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 53,
           "col": 53
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 54,
           "col": 53
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 55,
           "col": 53
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 56,
           "col": 53
         }
@@ -195,52 +195,52 @@
       "description": "Enemy forces",
       "units": [
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 45,
           "col": 185
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 48,
           "col": 185
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 51,
           "col": 185
         },
         {
-          "type": "soldier",
+          "type": "sloop",
           "row": 54,
           "col": 185
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 45,
           "col": 180
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 48,
           "col": 180
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 51,
           "col": 180
         },
         {
-          "type": "archer",
+          "type": "brigantine",
           "row": 54,
           "col": 180
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 45,
           "col": 188
         },
         {
-          "type": "knight",
+          "type": "ship_of_the_line",
           "row": 54,
           "col": 188
         }
